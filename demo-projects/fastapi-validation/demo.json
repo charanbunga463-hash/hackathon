@@ -1,0 +1,10 @@
+{
+  "title": "Signup API — Pydantic ValidationError",
+  "tagline": "GET /accounts/{username}/profile returns 500: a required model field is never supplied.",
+  "bug_class": "ValidationError",
+  "expected_error": "ValidationError: 1 validation error for Profile — plan Field required",
+  "difficulty": "medium",
+  "endpoint": "GET /accounts/{username}/profile",
+  "seeded_defect": "account_profile constructs Profile(...) without the required `plan` field, which the account record does carry.",
+  "expected_fix": "Pass plan=account[\"plan\"] when constructing the Profile."
+}

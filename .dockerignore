@@ -1,0 +1,53 @@
+# Build context exclusions.
+#
+# Both images build with `context: .`, so without this Docker uploads the whole
+# repository — including backend/.venv, frontend/node_modules and every
+# uploaded project workspace in data/. That is slow, and data/ contains user
+# code that has no business inside an image layer.
+
+# ---- secrets -------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- runtime data (user uploads, workspaces, snapshots, reports) ---------
+data/
+!data/.gitkeep
+
+# ---- python --------------------------------------------------------------
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+**/env/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/*.egg-info/
+**/.coverage
+**/htmlcov/
+
+# ---- node ----------------------------------------------------------------
+**/node_modules/
+**/.next/
+**/out/
+**/*.tsbuildinfo
+**/.eslintcache
+**/npm-debug.log*
+
+# ---- vcs / editors / ci --------------------------------------------------
+.git/
+.gitignore
+.github/
+.idea/
+.vscode/
+.claude/
+**/.DS_Store
+**/Thumbs.db
+
+# ---- docs and local tooling ---------------------------------------------
+docs/
+*.md
+!README.md

@@ -1,0 +1,10 @@
+{
+  "title": "Catalog API — response contract violation",
+  "tagline": "GET /books/{book_id} returns 500: the response is missing a field its response_model requires.",
+  "bug_class": "ResponseValidationError",
+  "expected_error": "fastapi.exceptions.ResponseValidationError: isbn Field required",
+  "difficulty": "medium",
+  "endpoint": "GET /books/{book_id}",
+  "seeded_defect": "get_book declares response_model=BookOut, which requires isbn, but the returned dict omits it.",
+  "expected_fix": "Include the isbn field, which the source record already carries, in the returned object."
+}

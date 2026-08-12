@@ -1,0 +1,10 @@
+{
+  "title": "Users API — KeyError",
+  "tagline": "GET /users/{user_id} returns 500 because the handler reads a key the data does not have.",
+  "bug_class": "KeyError",
+  "expected_error": "KeyError: 'username'",
+  "difficulty": "easy",
+  "endpoint": "GET /users/{user_id}",
+  "seeded_defect": "main.py builds the response with user[\"username\"], but USERS records store the key \"name\".",
+  "expected_fix": "Read user[\"name\"] instead of user[\"username\"]; the response key \"username\" stays as the API contract requires."
+}

@@ -1,0 +1,131 @@
+# API Doctor — full stack.
+#
+#   docker compose up --build
+#   UI   http://localhost:3000
+#   API  http://localhost:8000/docs
+#
+# SECURITY NOTE — read before enabling the Docker socket mount below.
+#
+# API Doctor runs untrusted project code inside short-lived containers. To
+# create them from inside a container it needs access to a Docker daemon, and
+# the usual way to give it that is to bind-mount /var/run/docker.sock. That
+# mount is equivalent to root on the host: anything that can talk to the socket
+# can start a privileged container and escape.
+#
+# The mount is therefore commented out by default. Choose one:
+#
+#   (a) Run the backend on the host (uvicorn) and only containerise the
+#       frontend. Simplest and safest for a demo.
+#   (b) Uncomment the socket mount, and only load code you trust.
+#   (c) Set EXECUTION_MODE=local and accept LOCAL TRUSTED MODE, which the UI
+#       banners on every screen.
+#
+# Do not enable the socket mount on a machine that also runs anything you care
+# about.
+
+services:
+  # Sessions, one-time codes and their rate limits live here. Accounts do not
+  # work without it: AUTH_MODE=user refuses to start in production without
+  # REDIS_URL, because in-memory state is lost on restart and is invisible to
+  # every other worker.
+  redis:
+    image: redis:7-alpine
+    container_name: api-doctor-redis
+    command: redis-server --save 60 1 --appendonly no --maxmemory 256mb --maxmemory-policy noeviction
+    volumes:
+      - api-doctor-redis:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: api-doctor-backend
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      # Read from your shell or a .env file next to this compose file.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      APP_ENV: ${APP_ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      # Without the socket mount there is no daemon to reach, so be explicit
+      # rather than silently degrading: `local` makes the UI show the banner.
+      EXECUTION_MODE: ${EXECUTION_MODE:-local}
+      REQUIRE_APPROVAL: ${REQUIRE_APPROVAL:-true}
+      MAX_REPAIR_ATTEMPTS: ${MAX_REPAIR_ATTEMPTS:-3}
+      DATA_DIR: /srv/api-doctor/data
+
+      # --- accounts -----------------------------------------------------
+      AUTH_MODE: ${AUTH_MODE:-user}
+      # Generate one and put it in your .env; a per-process fallback would
+      # invalidate every OTP on restart.
+      #   python -c "import secrets; print(secrets.token_urlsafe(48))"
+      SECRET_KEY: ${SECRET_KEY:-}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
+      # true once this is served over HTTPS. Browsers drop Secure cookies on
+      # plain-HTTP localhost, which would silently break sign-in.
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+
+      # --- data -----------------------------------------------------------
+      # Neon connection string. Leave empty and the app writes JSON files into
+      # the api-doctor-data volume instead — fine locally, single-node only.
+      DATABASE_URL: ${DATABASE_URL:-}
+      REDIS_URL: redis://redis:6379/0
+
+      # --- email (delivers the verification codes) ------------------------
+      # Leave SMTP_HOST empty locally and codes are written to the backend log
+      # instead of being sent: `docker compose logs -f backend`.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      SMTP_USE_SSL: ${SMTP_USE_SSL:-false}
+    volumes:
+      - api-doctor-data:/srv/api-doctor/data
+      # (b) Uncomment BOTH lines to enable the real Docker sandbox.
+      # - /var/run/docker.sock:/var/run/docker.sock
+      # and set EXECUTION_MODE=docker in the environment above.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        # Next bakes `rewrites()` into the build output, so the proxy target has
+        # to be supplied at build time. The `environment` entry below alone is
+        # not enough — see the comment in frontend/next.config.mjs.
+        NEXT_PUBLIC_API_URL: http://backend:8000
+    container_name: api-doctor-frontend
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      # Server-side rewrite target: the backend service on the compose network.
+      NEXT_PUBLIC_API_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  api-doctor-data:
+  api-doctor-redis:

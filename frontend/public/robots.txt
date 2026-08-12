@@ -1,0 +1,4 @@
+# API Doctor is an internal developer tool operating on private source code.
+# Nothing here should be indexed.
+User-agent: *
+Disallow: /

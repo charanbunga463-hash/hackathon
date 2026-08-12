@@ -1,0 +1,10 @@
+{
+  "title": "Billing API — ZeroDivisionError",
+  "tagline": "GET /carts/{cart_id}/average returns 500 for an empty cart.",
+  "bug_class": "ZeroDivisionError",
+  "expected_error": "ZeroDivisionError: division by zero",
+  "difficulty": "easy",
+  "endpoint": "GET /carts/{cart_id}/average",
+  "seeded_defect": "cart_average divides the total by len(items) without checking that the cart has items.",
+  "expected_fix": "Guard the division so an empty cart yields an average of 0 instead of crashing."
+}

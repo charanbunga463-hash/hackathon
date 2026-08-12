@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="API Doctor">
+  <rect width="32" height="32" rx="7" fill="#0a0c10"/>
+  <!-- Stethoscope tubing: the diagnose-then-verify motif of the product. -->
+  <path d="M10 6v6a6 6 0 0 0 12 0V6"
+        fill="none" stroke="#6098ff" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 18v3a5 5 0 0 0 10 0v-1"
+        fill="none" stroke="#6098ff" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="26" cy="18" r="2.6" fill="#3fb96c"/>
+  <circle cx="10" cy="6" r="1.8" fill="#6098ff"/>
+  <circle cx="22" cy="6" r="1.8" fill="#6098ff"/>
+</svg>

@@ -1,0 +1,27 @@
+# Version floors (not exact pins) so the resolver can pick wheels that exist for
+# the local interpreter. Python 3.14 has no prebuilt pydantic-core < 2.35.
+fastapi>=0.118.0
+uvicorn[standard]>=0.37.0
+pydantic>=2.12.0
+pydantic-settings>=2.10.0
+python-multipart>=0.0.20
+httpx>=0.28.1
+openai>=1.109.0
+pytest>=8.4.0
+pytest-asyncio>=1.0.0
+anyio>=4.9.0
+
+# Password hashing. Argon2id is the current recommendation for password
+# storage; the bindings ship wheels, so no compiler is needed.
+argon2-cffi>=23.1.0
+
+# Postgres (Neon) — the system of record. Optional: without DATABASE_URL the
+# app falls back to on-disk JSON stores, which is single-node only.
+psycopg[binary,pool]>=3.2.0
+
+# Shared state and cache for multi-worker / multi-replica deployments.
+# Optional: without REDIS_URL the app uses in-memory state, which is correct
+# for ONE worker only.
+redis>=5.0.0
+# Production process manager (POSIX only; on Windows use `uvicorn --workers`).
+gunicorn>=23.0.0; sys_platform != "win32"

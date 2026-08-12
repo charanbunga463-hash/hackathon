@@ -1,0 +1,10 @@
+{
+  "title": "Sessions API — AttributeError",
+  "tagline": "GET /sessions/{token}/expiry returns 500: the handler reads an attribute the model does not define.",
+  "bug_class": "AttributeError",
+  "expected_error": "AttributeError: 'Session' object has no attribute 'expiry'",
+  "difficulty": "easy",
+  "endpoint": "GET /sessions/{token}/expiry",
+  "seeded_defect": "session_expiry reads session.expiry, but the Session dataclass defines expires_at.",
+  "expected_fix": "Read session.expires_at instead of session.expiry."
+}

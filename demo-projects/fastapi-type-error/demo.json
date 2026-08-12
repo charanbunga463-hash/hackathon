@@ -1,0 +1,10 @@
+{
+  "title": "Inventory API — TypeError",
+  "tagline": "GET /products/{sku}/gross-price returns 500: a CSV-imported price is a string.",
+  "bug_class": "TypeError",
+  "expected_error": "TypeError: can't multiply sequence by non-int of type 'float'",
+  "difficulty": "easy",
+  "endpoint": "GET /products/{sku}/gross-price",
+  "seeded_defect": "PRODUCTS stores price as a string, and gross_price multiplies it by a float tax multiplier.",
+  "expected_fix": "Coerce the price to float at the point of use."
+}

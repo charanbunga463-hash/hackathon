@@ -1,0 +1,10 @@
+{
+  "title": "Orders API — wrong HTTP status",
+  "tagline": "GET /orders/{order_id} answers 200 with a null body for an order that does not exist.",
+  "bug_class": "HTTPStatus",
+  "expected_error": "AssertionError: assert 200 == 404",
+  "difficulty": "medium",
+  "endpoint": "GET /orders/{order_id}",
+  "seeded_defect": "get_order returns None on the missing-order path, which FastAPI serialises as a 200 with a null body.",
+  "expected_fix": "Raise HTTPException(status_code=404) instead of returning None."
+}

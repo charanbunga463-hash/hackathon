@@ -1,0 +1,168 @@
+# API Doctor — multi-worker production stack.
+#
+#   cp .env.example .env      # set OPENAI_API_KEY, API_KEYS, EXECUTION_MODE
+#   docker compose -f docker-compose.prod.yml up --build -d
+#   open http://localhost
+#
+# What this adds over docker-compose.yml (the single-node dev stack):
+#
+#   * Redis, so several backend replicas share state. Without it, an approval
+#     POST that lands on the wrong replica never applies the patch and the SSE
+#     feed shows nothing — both silent failures, both verified by
+#     backend/tests/check_multiworker.py.
+#   * nginx in front, configured so the event stream is not buffered.
+#   * API-key auth, because AUTH_MODE=open would expose every tenant's uploaded
+#     source to every other tenant. The app refuses to start in production
+#     without it.
+#   * Resource limits and health checks on every service.
+#
+# SECURITY: the backend still needs a Docker daemon to sandbox untrusted code.
+# Mounting the host socket is root-equivalent — see the note in
+# docker-compose.yml and docs/security.md before enabling it.
+
+x-backend-env: &backend-env
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+  APP_ENV: production
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+  # Neon (or any managed Postgres) is the system of record. Required in
+  # production: without it accounts and projects live in one container's
+  # filesystem, so a second replica sees a different world.
+  DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL to your Neon connection string}
+  DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-8}
+
+  REDIS_URL: redis://redis:6379/0
+
+  # Accounts. `user` is the product default; switch to `apikey` for a
+  # machine-only deployment and drop the SECRET_KEY/SMTP block below.
+  AUTH_MODE: ${AUTH_MODE:-user}
+  SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env — python -c "import secrets; print(secrets.token_urlsafe(48))"}
+  ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
+  # Production terminates TLS at nginx, so the cookie must never leave over
+  # plain HTTP. The app refuses to start with this false in production.
+  SESSION_COOKIE_SECURE: "true"
+
+  # Verification and password-reset codes. Production refuses to start with
+  # AUTH_MODE=user and no SMTP host: codes would go to the log, not the user.
+  SMTP_HOST: ${SMTP_HOST:?set SMTP_HOST in .env, or set AUTH_MODE=apikey}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USERNAME: ${SMTP_USERNAME:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+  SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+  SMTP_USE_SSL: ${SMTP_USE_SSL:-false}
+
+  # Only used when AUTH_MODE=apikey.
+  API_KEYS: ${API_KEYS:-}
+  EXECUTION_MODE: ${EXECUTION_MODE:-local}
+  REQUIRE_APPROVAL: ${REQUIRE_APPROVAL:-true}
+  MAX_CONCURRENT_JOBS: ${MAX_CONCURRENT_JOBS:-4}
+  MAX_CONCURRENT_JOBS_PER_TENANT: ${MAX_CONCURRENT_JOBS_PER_TENANT:-1}
+  MAX_QUEUED_JOBS: ${MAX_QUEUED_JOBS:-200}
+  RATE_LIMIT_ENABLED: "true"
+  DATA_DIR: /srv/api-doctor/data
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: api-doctor-redis
+    # Shared coordination state (locks, pub/sub, rate-limit buckets), not a
+    # system of record — losing it costs in-flight coordination, not data.
+    command: >
+      redis-server
+      --save ""
+      --appendonly no
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 320M}
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      <<: *backend-env
+      # Workers per replica. Each is a full event loop; heavy work is bounded
+      # separately by MAX_CONCURRENT_JOBS.
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-4}
+    command:
+      - gunicorn
+      - app.main:app
+      - --worker-class=uvicorn.workers.UvicornWorker
+      - --workers=${WEB_CONCURRENCY:-4}
+      - --bind=0.0.0.0:8000
+      - --backlog=4096
+      - --timeout=180
+      - --graceful-timeout=45     # must exceed SHUTDOWN_DRAIN_SECONDS
+      - --keep-alive=15
+      - --access-logfile=-
+    volumes:
+      - api-doctor-data:/srv/api-doctor/data
+      # Uncomment BOTH of these AND set EXECUTION_MODE=docker for real sandboxing.
+      # This grants host-root-equivalent access; read docs/security.md first.
+      # - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/readyz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    # Scale horizontally: `docker compose -f docker-compose.prod.yml up -d --scale backend=3`
+    deploy:
+      replicas: ${BACKEND_REPLICAS:-2}
+      resources:
+        limits: {cpus: "2.0", memory: 2G}
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        # Baked into the build: Next resolves `rewrites()` at build time, so a
+        # runtime-only value silently leaves the proxy pointing at localhost.
+        NEXT_PUBLIC_API_URL: http://nginx
+    environment:
+      NEXT_PUBLIC_API_URL: http://nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 512M}
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: api-doctor-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 256M}
+
+volumes:
+  api-doctor-data:

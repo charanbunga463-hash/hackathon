@@ -1,0 +1,45 @@
+# ---- secrets -------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ---- python --------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# ---- node / next ---------------------------------------------------------
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.npm/
+.eslintcache
+
+# ---- api doctor runtime data --------------------------------------------
+# Uploaded projects, extracted workspaces, snapshots, sessions and reports.
+# This is user data and can be large; it is never source of truth.
+data/
+!data/.gitkeep
+
+# ---- editors / os --------------------------------------------------------
+.idea/
+.vscode/
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+*.swp
+*~
