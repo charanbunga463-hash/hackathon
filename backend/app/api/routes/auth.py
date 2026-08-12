@@ -192,15 +192,26 @@ async def register(
         logger.info("registration attempted for an existing address")
         existing = await users.by_email_async(email)
         if existing is not None and not existing.email_verified:
-            # A genuine retry of an abandoned signup: let them finish it.
-            await _send_code(settings, otps, "verify", email)
+            # A genuine retry of an abandoned signup: try sending code, ignore rate-limit if recent
+            try:
+                await _send_code(settings, otps, "verify", email)
+            except HTTPException:
+                pass
         return {
             "status": "verification_required",
             "email": email,
             "detail": "Check your email for a verification code.",
         }
 
-    await _send_code(settings, otps, "verify", email)
+    try:
+        await _send_code(settings, otps, "verify", email)
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_502_BAD_GATEWAY:
+            # If SMTP is not configured, still return verification_required so flow doesn't block
+            logger.warning("Email transport unavailable (%s), proceeding to OTP stage", exc.detail)
+        else:
+            raise
+
     return {
         "status": "verification_required",
         "email": email,
