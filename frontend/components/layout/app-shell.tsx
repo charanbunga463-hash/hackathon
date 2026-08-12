@@ -26,6 +26,7 @@ import { usePathname } from "next/navigation";
 import * as React from "react";
 
 import { useAuth } from "@/components/auth/auth-context";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -79,7 +80,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <UserMenu />
             <button
               onClick={() => setMobileOpen((open) => !open)}

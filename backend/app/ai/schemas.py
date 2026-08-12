@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # ---------------------------------------------------------------------------
 # Response payloads the model is asked to produce
@@ -88,17 +88,47 @@ class AIFileEdit(BaseModel):
         )
     )
     new: str = Field(description="The replacement text (or the file body for create_file).")
-    line_hint: int = Field(description="Approximate line number of the change, or 0.")
+    line_hint: int = Field(default=0, description="Approximate line number of the change, or 0.")
     reason: str = Field(description="Why this specific edit is required.")
+
+    @field_validator("operation", mode="before")
+    @classmethod
+    def normalize_operation(cls, v: Any) -> str:
+        if isinstance(v, str):
+            val = v.lower().strip()
+            if val in ("modify", "update", "change", "edit"):
+                return "replace"
+            if val in ("replace", "insert_after", "create_file"):
+                return val
+        return "replace"
+
+    @field_validator("line_hint", mode="before")
+    @classmethod
+    def normalize_line_hint(cls, v: Any) -> int:
+        if v is None:
+            return 0
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            return 0
 
 
 class AIPatchProposal(BaseModel):
     title: str = Field(description="Short imperative summary, e.g. \"Use the 'name' key instead of 'username'\".")
     explanation: str = Field(description="Why this fixes the root cause, referencing the evidence.")
     edits: list[AIFileEdit] = Field(description="The smallest set of edits that fixes the root cause.")
-    tests_to_run: list[str] = Field(description="pytest node ids that should now pass.")
-    risk: Literal["low", "medium", "high"]
-    confidence: float = Field(description="0.0 to 1.0.")
+    tests_to_run: list[str] = Field(default_factory=list, description="pytest node ids that should now pass.")
+    risk: Literal["low", "medium", "high"] = "low"
+    confidence: float = Field(default=0.9, description="0.0 to 1.0.")
+
+    @field_validator("risk", mode="before")
+    @classmethod
+    def normalize_risk(cls, v: Any) -> str:
+        if isinstance(v, str):
+            val = v.lower().strip()
+            if val in ("low", "medium", "high"):
+                return val
+        return "low"
 
 
 class AIPatchReview(BaseModel):
