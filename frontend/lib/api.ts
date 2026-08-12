@@ -111,6 +111,7 @@ export const getProjectRoutes = (id: string) =>
   request<{ routes: RouteInfo[]; framework: string; entry_point: string | null }>(
     `/projects/${id}/routes`,
   );
+export const exportProjectUrl = (id: string) => `${API_BASE}/projects/${id}/export`;
 
 export async function uploadProject(file: File, name?: string): Promise<Project> {
   const form = new FormData();

@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   Bug,
+  Download,
   FileCode2,
   FlaskConical,
   Globe,
@@ -40,6 +41,7 @@ import { useAsync, useEvents, usePolling } from "@/hooks/useEvents";
 import {
   analyzeProject,
   diagnose,
+  exportProjectUrl,
   getActiveRepair,
   getProject,
   getProjectFile,
@@ -232,6 +234,15 @@ export default function ProjectDetailPage() {
               <Wrench className="h-3.5 w-3.5" />
               {running ? "Repair running…" : "Repair"}
             </Button>
+            <a
+              href={exportProjectUrl(projectId)}
+              download
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-xs font-medium h-7 px-2.5 border border-line bg-elevated text-ink hover:bg-line/40 transition-colors"
+              title="Download fixed project code as a ZIP archive"
+            >
+              <Download className="h-3.5 w-3.5 text-accent" />
+              Export Fixed Zip
+            </a>
           </div>
         </div>
       </header>

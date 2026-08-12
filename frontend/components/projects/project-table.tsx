@@ -9,7 +9,7 @@
  * overflow the viewport.
  */
 
-import { FolderPlus, Trash2 } from "lucide-react";
+import { Download, FolderPlus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 
@@ -19,7 +19,7 @@ import {
   ConfirmDialog,
   EmptyState,
 } from "@/components/ui/primitives";
-import { deleteProject } from "@/lib/api";
+import { deleteProject, exportProjectUrl } from "@/lib/api";
 import { errorMessage } from "@/lib/auth";
 import { formatRelative } from "@/lib/utils";
 import type { ProjectStatus, ProjectSummary } from "@/types";
@@ -143,6 +143,14 @@ export function ProjectTable({
                     >
                       Open
                     </Link>
+                    <a
+                      href={exportProjectUrl(project.id)}
+                      download
+                      className="inline-flex items-center justify-center rounded-md p-1.5 text-muted hover:bg-elevated hover:text-ink transition-colors"
+                      title="Export fixed project code as ZIP"
+                    >
+                      <Download className="h-3.5 w-3.5 text-muted hover:text-accent" />
+                    </a>
                     {showDelete ? (
                       <Button
                         variant="ghost"

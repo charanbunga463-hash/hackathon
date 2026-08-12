@@ -4,6 +4,7 @@ import {
   BadgeCheck,
   Check,
   CircleDashed,
+  Download,
   Loader2,
   Undo2,
   X,
@@ -21,7 +22,7 @@ import {
 } from "@/components/test-results/test-results";
 import { ClaimSection, ClaimTag, VerdictBanner } from "@/components/ui/claim-ladder";
 import { Badge, Button, ErrorNote, Panel, PanelHeader } from "@/components/ui/primitives";
-import { decidePatch, rollbackSession } from "@/lib/api";
+import { decidePatch, exportProjectUrl, rollbackSession } from "@/lib/api";
 import {
   STAGE_LABEL,
   STAGE_ORDER,
@@ -349,12 +350,31 @@ export function RepairSessionView({
       ))}
 
       {applied && !running ? (
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <a
+            href={exportProjectUrl(session.project_id)}
+            download
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-xs font-medium h-8 px-3.5 bg-accent text-white hover:bg-accent/90 transition-colors shadow-sm"
+          >
+            <Download className="h-4 w-4" />
+            Export Fixed ZIP
+          </a>
           <Button variant="secondary" size="sm" loading={rollingBack} onClick={rollback}>
             <Undo2 className="h-3.5 w-3.5" /> Roll back the applied patch
           </Button>
         </div>
-      ) : null}
+      ) : (
+        <div className="flex justify-end">
+          <a
+            href={exportProjectUrl(session.project_id)}
+            download
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-xs font-medium h-7 px-2.5 border border-line bg-elevated text-ink hover:bg-line/40 transition-colors"
+          >
+            <Download className="h-3.5 w-3.5 text-accent" />
+            Export Fixed ZIP
+          </a>
+        </div>
+      )}
     </div>
   );
 }

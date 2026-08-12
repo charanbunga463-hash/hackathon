@@ -216,3 +216,58 @@ async def project_routes(
         "entry_point": metadata.entry_point if metadata else None,
         "routes": [route.model_dump(mode="json") for route in (metadata.routes if metadata else [])],
     }
+
+
+@router.get("/{project_id}/export")
+async def export_project(
+    project_id: str,
+    principal: Principal = Depends(current_principal),
+    projects: ProjectService = Depends(project_service),
+):
+    """Export the project workspace (including any applied repairs/fixes) as a zip archive."""
+    import tempfile
+    import zipfile
+    from pathlib import Path
+    from fastapi.responses import FileResponse
+
+    project = await owned_project(project_id, projects, principal.tenant)
+    workspace = projects.workspace(project_id)
+    if not workspace.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Workspace directory not found"
+        )
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    tmp_path = Path(tmp.name)
+    tmp.close()
+
+    try:
+        def archive_workspace():
+            with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                for file_path in workspace.rglob("*"):
+                    if file_path.is_file():
+                        rel_parts = file_path.relative_to(workspace).parts
+                        # Skip caches, pycache, git metadata
+                        if any(part in ("__pycache__", ".pytest_cache", ".git", ".venv", "node_modules") for part in rel_parts):
+                            continue
+                        arcname = file_path.relative_to(workspace)
+                        zipf.write(file_path, arcname)
+
+        await io_bound(archive_workspace)
+
+        safe_name = "".join(c for c in project.name if c.isalnum() or c in ("-", "_")).strip() or "project"
+        filename = f"{safe_name}_fixed.zip"
+
+        return FileResponse(
+            path=tmp_path,
+            media_type="application/zip",
+            filename=filename,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as exc:
+        tmp_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not create export archive: {exc}",
+        ) from exc
+
