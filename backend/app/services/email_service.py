@@ -92,7 +92,7 @@ class SmtpEmailSender:
                         server.starttls(context=ssl.create_default_context())
                     self._authenticate(server)
                     server.send_message(message)
-        except (smtplib.SMTPException, OSError) as exc:
+        except Exception as exc:
             # The exception text can contain the recipient and server banner but
             # never the password; still, callers must not forward it to a client.
             raise EmailError(f"{type(exc).__name__}: {exc}") from exc

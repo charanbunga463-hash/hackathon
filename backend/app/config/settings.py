@@ -148,7 +148,7 @@ class Settings(BaseSettings):
     smtp_from_email: str = ""
     smtp_use_tls: bool = True
     smtp_use_ssl: bool = False
-    smtp_timeout_seconds: float = 20.0
+    smtp_timeout_seconds: float = 5.0
 
     # --------------------------------------------------------- database ----
     # Neon (or any Postgres) is the system of record: users, projects, repair
