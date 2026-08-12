@@ -41,6 +41,13 @@ ENV DATA_DIR=/srv/api-doctor/data \
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -fsS http://127.0.0.1:8000/api/health || exit 1
+    CMD curl -fsS "http://127.0.0.1:${PORT:-8000}/api/health" || exit 1
 
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Bind whatever port the platform assigns.
+#
+# Render, Fly, Heroku and Cloud Run all inject $PORT and route traffic to it
+# only; a container that listens on a fixed 8000 is marked unhealthy and never
+# receives a request. The shell form is required so $PORT is expanded at
+# runtime — the exec form would pass the literal string "$PORT" to uvicorn.
+# Falls back to 8000, so docker-compose and local runs are unchanged.
+CMD ["sh", "-c", "exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

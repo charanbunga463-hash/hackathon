@@ -1,0 +1,143 @@
+# Render Blueprint for API Doctor.
+#
+#   Render Dashboard -> New -> Blueprint -> pick this repo.
+#
+# Everything marked `sync: false` is a secret: Render prompts for it once and
+# stores it encrypted. Nothing secret is written in this file, and nothing here
+# should ever be.
+#
+# ---------------------------------------------------------------------------
+# READ THIS BEFORE DEPLOYING — the sandbox does not exist on Render.
+#
+# API Doctor executes uploaded project code. Locally it does that inside a
+# Docker container (EXECUTION_MODE=docker), which needs a Docker daemon. Render
+# does not give a service access to a Docker daemon, so that mode cannot work
+# there and the app falls back to LOCAL TRUSTED MODE: uploaded code runs
+# directly inside the backend container, with timeouts and credential scrubbing
+# still enforced but with no CPU, memory, filesystem or network isolation.
+#
+# The production config validator refuses to start in that state on purpose,
+# which is why APP_ENV below is `staging` rather than `production` — the other
+# production protections are set explicitly here instead.
+#
+# That is a reasonable, informed trade-off for a demo where you upload your own
+# code. It is NOT safe for accepting uploads from strangers. For that you need a
+# host that gives you a Docker daemon (a VM, Fly.io with a privileged machine,
+# or ECS) and EXECUTION_MODE=docker.
+# ---------------------------------------------------------------------------
+
+services:
+  # ----------------------------------------------------------------- redis --
+  # Sessions, one-time codes, rate-limit buckets and cross-worker coordination.
+  # Not a system of record: losing it costs in-flight coordination, not data.
+  - type: redis
+    name: apidoctor-redis
+    plan: free
+    ipAllowList: []          # reachable only from inside the Render network
+    maxmemoryPolicy: allkeys-lru
+
+  # --------------------------------------------------------------- backend --
+  - type: web
+    name: apidoctor-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .         # the Dockerfile COPYs backend/, so context is the repo root
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      # --- identity and safety -------------------------------------------
+      # `staging` rather than `production`: see the note at the top. Every
+      # protection the production validator would have enforced is set here.
+      - key: APP_ENV
+        value: staging
+      - key: AUTH_MODE
+        value: user
+      - key: SESSION_COOKIE_SECURE
+        value: "true"        # Render terminates TLS; the cookie must not travel over HTTP
+      - key: ALLOW_REGISTRATION
+        value: "true"
+      # Signs OTP digests. Generate once: python -c "import secrets; print(secrets.token_urlsafe(48))"
+      - key: SECRET_KEY
+        generateValue: true
+
+      # --- the browser origin allowed to call this API --------------------
+      # Must be the FRONTEND's public URL, not the backend's.
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: apidoctor-frontend
+          property: host
+          # Render supplies the bare host; the app needs a scheme, so if this
+          # ends up wrong just set it manually to https://<frontend>.onrender.com
+
+      # --- shared state ---------------------------------------------------
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: apidoctor-redis
+          property: connectionString
+
+      # --- external services (entered once, stored encrypted) -------------
+      - key: DATABASE_URL      # Neon POOLED connection string, with ?sslmode=require
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: SMTP_HOST
+        value: smtp.sendgrid.net
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        value: apikey          # the literal word — SendGrid requires exactly this
+      - key: SMTP_PASSWORD     # the SG.xxx API key
+        sync: false
+      - key: SMTP_FROM_EMAIL   # must be verified in SendGrid Sender Authentication
+        sync: false
+
+      # --- execution ------------------------------------------------------
+      # No Docker daemon on Render; see the note at the top of this file.
+      - key: EXECUTION_MODE
+        value: local
+
+      # --- capacity -------------------------------------------------------
+      # Free/starter instances are small. One worker keeps memory predictable;
+      # raise together with the instance size.
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: MAX_CONCURRENT_JOBS
+        value: "2"
+      - key: LOG_LEVEL
+        value: INFO
+
+      # --- uploads --------------------------------------------------------
+      # 0 = unlimited. Render's ephemeral disk is small and is wiped on every
+      # deploy, so a real ceiling is sensible here even though the app allows
+      # none. Set to 0 if you attach a persistent disk.
+      - key: MAX_PROJECT_SIZE_MB
+        value: "200"
+
+  # -------------------------------------------------------------- frontend --
+  - type: web
+    name: apidoctor-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      # IMPORTANT: Next resolves `rewrites()` at BUILD time and bakes the result
+      # into the build output, so this value must be present as a Docker BUILD
+      # ARG — a runtime-only variable is ignored and the proxy silently falls
+      # back to localhost, making every API call fail with a 500.
+      #
+      # Render does not pass service env vars as Docker build args. Set the
+      # default in frontend/Dockerfile to your backend's public URL:
+      #
+      #   ARG NEXT_PUBLIC_API_URL=https://apidoctor-backend.onrender.com
+      #
+      # It is kept here too so the running server agrees with the baked value.
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: apidoctor-backend
+          property: host
