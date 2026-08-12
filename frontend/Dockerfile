@@ -1,13 +1,16 @@
 # API Doctor frontend (Next.js).
+#
+# BUILD CONTEXT IS THIS DIRECTORY (frontend/), not the repository root — see the
+# matching note in backend/Dockerfile.
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY frontend/package.json frontend/package-lock.json* ./
+COPY package.json package-lock.json* ./
 RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY frontend/ ./
+COPY . ./
 # Next evaluates `rewrites()` during the build and writes the result into
 # .next/routes-manifest.json, so the API proxy target has to be known HERE.
 # Supplying it only as a runtime environment variable leaves the manifest

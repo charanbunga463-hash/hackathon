@@ -87,8 +87,9 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      # Context is the service's own directory; see backend/Dockerfile.
+      context: ./backend
+      dockerfile: Dockerfile
     environment:
       <<: *backend-env
       # Workers per replica. Each is a full event loop; heavy work is bounded
@@ -128,8 +129,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
       args:
         # Baked into the build: Next resolves `rewrites()` at build time, so a
         # runtime-only value silently leaves the proxy pointing at localhost.

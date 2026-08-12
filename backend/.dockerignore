@@ -1,0 +1,36 @@
+# Build context exclusions for the backend image.
+#
+# The context is this directory, so Docker only consults THIS file — the one at
+# the repository root no longer applies. Without it the virtualenv alone adds
+# hundreds of megabytes to every build, and uploaded project workspaces would be
+# baked into an image layer.
+
+# ---- secrets -------------------------------------------------------------
+.env
+.env.*
+*.pem
+*.key
+
+# ---- python --------------------------------------------------------------
+.venv/
+venv/
+env/
+__pycache__/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# ---- runtime data --------------------------------------------------------
+data/
+
+# ---- not needed in the image ---------------------------------------------
+# `tests/` is deliberately excluded: the image runs the service, and the suite
+# is run in CI against the source tree, not inside the shipped container.
+tests/
+scripts/
+*.md

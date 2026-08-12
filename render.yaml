@@ -40,8 +40,9 @@ services:
   - type: web
     name: apidoctor-backend
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: .         # the Dockerfile COPYs backend/, so context is the repo root
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .         # relative to rootDir, i.e. backend/
     plan: free
     healthCheckPath: /api/health
     envVars:
@@ -121,7 +122,8 @@ services:
   - type: web
     name: apidoctor-frontend
     runtime: docker
-    dockerfilePath: ./frontend/Dockerfile
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
     dockerContext: .
     plan: free
     envVars:

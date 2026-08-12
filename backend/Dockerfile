@@ -1,5 +1,11 @@
 # API Doctor backend.
 #
+# BUILD CONTEXT IS THIS DIRECTORY (backend/), not the repository root. Every
+# COPY below is relative to it, so the image builds identically whether you run
+# `docker build backend/`, docker-compose (context: ./backend), or a PaaS whose
+# root directory is set to `backend` — which is the natural setting and was
+# previously a guaranteed build failure.
+#
 # The container needs a Docker socket to start execution sandboxes. Mounting the
 # host socket gives this container control of the host daemon, so it is opt-in
 # and documented in docs/security.md — it is NOT a default.
@@ -23,11 +29,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
-COPY backend/requirements.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY backend/app ./app
-COPY backend/pytest.ini ./pytest.ini
+COPY app ./app
+COPY pytest.ini ./pytest.ini
 
 RUN useradd --create-home --uid 10001 apidoctor \
     && mkdir -p /srv/api-doctor/data \

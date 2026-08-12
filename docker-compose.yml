@@ -43,8 +43,9 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      # Context is the service's own directory; see backend/Dockerfile.
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: api-doctor-backend
     ports:
       - "127.0.0.1:8000:8000"
@@ -108,8 +109,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
       args:
         # Next bakes `rewrites()` into the build output, so the proxy target has
         # to be supplied at build time. The `environment` entry below alone is
