@@ -277,7 +277,7 @@ export default function ProjectDetailPage() {
                       <TestRunSummary run={record.test_result} />
                     ) : record?.api_result ? (
                       <div className="space-y-2 text-xs">
-                        <p className="text-muted">{record.label}</p>
+                        <p className="text-muted text-xs leading-relaxed break-words [overflow-wrap:anywhere]">{record.label}</p>
                         <ul className="space-y-1">
                           {record.api_result.probes.slice(0, 8).map((probe, index) => (
                             <li key={index} className="flex items-center gap-2">
@@ -476,11 +476,11 @@ export default function ProjectDetailPage() {
           {tab === "code" ? <CodeBrowser projectId={projectId} /> : null}
         </div>
 
-        <Panel className="flex h-[calc(100vh-13rem)] flex-col xl:sticky xl:top-6">
+        <Panel className="flex h-[calc(100vh-13rem)] max-h-[700px] min-h-[420px] flex-col overflow-hidden xl:sticky xl:top-6">
           <ActivityStream
             events={events}
             connected={connected}
-            className="flex-1"
+            className="flex-1 min-h-0 h-full overflow-hidden"
             emptyHint="Run tests or start a repair to watch each agent step stream in."
           />
         </Panel>

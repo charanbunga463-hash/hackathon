@@ -71,11 +71,11 @@ export function ActivityStream({
   };
 
   return (
-    <div className={cn("flex flex-col", className)}>
-      <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2">
+    <div className={cn("flex flex-col min-h-0 h-full overflow-hidden", className)}>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-3.5 py-2.5 bg-surface/50">
         <div className="flex items-center gap-2">
           <Radio
-            className={cn("h-3.5 w-3.5", connected ? "text-ok" : "text-faint")}
+            className={cn("h-3.5 w-3.5", connected ? "text-ok animate-pulse" : "text-faint")}
             aria-hidden
           />
           <span className="text-xs font-medium text-ink">Agent activity</span>
@@ -88,7 +88,7 @@ export function ActivityStream({
 
       <div
         onScroll={onScroll}
-        className="scroll-thin flex-1 overflow-y-auto px-1 py-1"
+        className="scroll-thin flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-2 space-y-1"
       >
         {events.length === 0 ? (
           <EmptyState
@@ -100,26 +100,26 @@ export function ActivityStream({
             }
           />
         ) : (
-          <ol className="space-y-0.5">
+          <ol className="space-y-1 min-w-0 w-full">
             {events.map((event) => {
               const Icon = ICONS[event.type] ?? CircleDot;
               return (
                 <li
                   key={event.id}
-                  className="animate-fade-up flex items-start gap-2 rounded px-2 py-1.5 hover:bg-elevated/60"
+                  className="animate-fade-up flex items-start gap-2.5 rounded-md p-2 transition-colors hover:bg-elevated/80 border border-transparent hover:border-line/40 min-w-0 w-full overflow-hidden"
                 >
                   <Icon
                     className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", LEVEL_CLASS[event.level])}
                     aria-hidden
                   />
-                  <div className="min-w-0 flex-1">
-                    <p className={cn("text-xs leading-snug", LEVEL_CLASS[event.level])}>
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <p className={cn("text-xs leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word]", LEVEL_CLASS[event.level])}>
                       {event.message}
                     </p>
-                    <p className="mono mt-0.5 flex flex-wrap items-center gap-1.5 text-2xs text-faint">
+                    <p className="mono mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-faint break-words">
                       <span>{formatTime(event.at)}</span>
                       <span>·</span>
-                      <span>{event.type}</span>
+                      <span className="truncate max-w-[140px]">{event.type}</span>
                       {event.attempt ? (
                         <>
                           <span>·</span>
@@ -139,7 +139,7 @@ export function ActivityStream({
       {!pinned ? (
         <button
           onClick={() => setPinned(true)}
-          className="border-t border-line px-3 py-1.5 text-2xs text-accent hover:bg-elevated"
+          className="shrink-0 border-t border-line px-3 py-1.5 text-2xs text-accent hover:bg-elevated text-center font-medium transition-colors"
         >
           Jump to latest
         </button>
