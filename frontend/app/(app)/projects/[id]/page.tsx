@@ -71,10 +71,20 @@ export default function ProjectDetailPage() {
     { failure: NormalizedFailure; diagnosis: DiagnosisResult; facts: string[]; note: string } | null
   >(null);
 
+  // Poll fast only while a repair is actually in flight.
+  //
+  // These endpoints are not free: `/repair/{id}/active` costs two database
+  // queries, and against a managed database in another region that is most of a
+  // second each. Polling every 2.5s on an idle page kept the backend permanently
+  // busy answering "no, still nothing". The live SSE stream below already pushes
+  // the moment anything happens, so idle polling only needs to be a safety net
+  // for a dropped stream.
+  const [repairInFlight, setRepairInFlight] = React.useState(false);
+
   const { data: project, refresh: refreshProject } = usePolling(
     () => getProject(projectId),
-    10000,
-    [projectId],
+    repairInFlight ? 10_000 : 60_000,
+    [projectId, repairInFlight],
   );
   const { data: latest, refresh: refreshExecution } = usePolling(
     () => latestExecution(projectId),
@@ -83,10 +93,23 @@ export default function ProjectDetailPage() {
   );
   const { data: active, refresh: refreshActive } = usePolling(
     () => getActiveRepair(projectId),
-    2500,
-    [projectId],
+    repairInFlight ? 2500 : 30_000,
+    [projectId, repairInFlight],
   );
   const { events, connected } = useEvents(projectId);
+
+  React.useEffect(() => {
+    setRepairInFlight(active?.running ?? false);
+  }, [active?.running]);
+
+  // The stream is the real signal. Anything other than a heartbeat means state
+  // changed, so refresh immediately rather than waiting for the next tick.
+  const lastEvent = events.length ? events[events.length - 1] : null;
+  React.useEffect(() => {
+    if (!lastEvent || lastEvent.type === "heartbeat") return;
+    void refreshActive();
+    void refreshExecution();
+  }, [lastEvent, refreshActive, refreshExecution]);
 
   React.useEffect(() => {
     if (latest?.record) setExecution(latest.record);

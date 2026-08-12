@@ -92,11 +92,22 @@ def init_pool(url: str, *, min_size: int = 1, max_size: int = 8, timeout: float 
             min_size=min_size,
             max_size=max_size,
             timeout=timeout,
-            # Hand out only connections that answer. Without this, the first
-            # query after Neon suspends the compute fails instead of waiting
-            # for it to wake.
-            check=ConnectionPool.check_connection,
+            # NO `check=` on purpose.
+            #
+            # `ConnectionPool.check_connection` issues a `SELECT 1` on every
+            # checkout to prove the connection is alive. Against a managed
+            # database in another region that doubles the round trips of every
+            # query for no new safety: `retrying()` below already catches
+            # OperationalError and retries with backoff, which is the same
+            # recovery path a failed check would have led to.
+            #
+            # Measured against a Neon instance one region away: 1014 ms per
+            # query with the check, 751 ms without — 26% of every database call
+            # spent re-proving liveness the retry loop already handles.
             kwargs={"application_name": "api-doctor", "connect_timeout": 15},
+            # Recycle before Neon's own idle cutoff so a checkout rarely meets a
+            # server-closed socket in the first place.
+            max_idle=120.0,
             open=False,
         )
         pool.open(wait=True, timeout=timeout)

@@ -50,6 +50,14 @@ WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 EXEMPT_PATHS = frozenset({"/api/health", "/healthz", "/readyz", "/metrics"})
 SLOW_REQUEST_SECONDS = 2.0
 
+# Endpoints whose responses are deliberately long-lived, so elapsed time says
+# nothing about health.
+STREAMING_PATHS = ("/api/events",)
+
+
+def _is_streaming(path: str) -> bool:
+    return path.startswith(STREAMING_PATHS)
+
 # The only endpoints reachable without a session. Everything else — including
 # every project, execution, repair, report and event route — is closed. This is
 # an allowlist on purpose: a new route is protected by default, and forgetting
@@ -197,7 +205,10 @@ class ObservabilityMiddleware:
             method = scope.get("method", "GET")
             metrics.http_requests.inc(method=method, path=route, status=str(status_code))
             metrics.http_latency.observe(elapsed, method=method, path=route)
-            if elapsed > SLOW_REQUEST_SECONDS:
+            # The event stream is a long-lived response by design — a 48-second
+            # /api/events is a healthy one, not a slow one. Warning on it buries
+            # the genuinely slow requests in noise.
+            if elapsed > SLOW_REQUEST_SECONDS and not _is_streaming(scope.get("path", "")):
                 logger.warning(
                     "slow request [request_id=%s] %s %s took %.2fs",
                     request_id, method, scope.get("path"), elapsed,
