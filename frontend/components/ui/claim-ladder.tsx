@@ -28,7 +28,7 @@ export type ClaimKind =
 
 const CLAIMS: Record<
   ClaimKind,
-  { label: string; icon: React.ElementType; tone: Tone; blurb: string }
+  { label: string; icon: React.ComponentType<any>; tone: Tone; blurb: string }
 > = {
   observed: {
     label: "OBSERVED FACT",
