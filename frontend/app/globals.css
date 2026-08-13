@@ -2,40 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   Daylight — the API Doctor design language.
+
+   One theme. Light, bright, high-contrast-where-it-matters, and defined
+   entirely by the tokens below. There is deliberately no `.dark` block and no
+   `prefers-color-scheme` branch: a second palette is a second product to
+   maintain, and this one is meant to read like a well-lit clinic, not a
+   terminal.
+
+   Depth here is made of tinted shadows and pale washes rather than darker
+   greys. On a bright page, a grey panel reads as "disabled"; a white panel
+   with a soft blue shadow reads as "on top".
+   ========================================================================== */
+
 @layer base {
   :root {
-    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    color-scheme: light;
 
-    /* Bright: a clean, luminous studio — the default everywhere. */
-    --canvas: 245 247 252;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", sans-serif;
+    --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas,
+      monospace;
+
+    /* --- ground -------------------------------------------------------- */
+    --canvas: 247 249 252;
     --surface: 255 255 255;
-    --elevated: 242 245 251;
-    --line: 223 228 238;
-    --ink: 17 24 39;
-    --muted: 82 92 112;
-    --faint: 146 156 176;
-    --accent: 79 70 229;
-    --ok: 22 163 74;
-    --warn: 202 108 8;
-    --danger: 220 38 38;
-    --info: 2 132 199;
-  }
+    --elevated: 244 247 251;
+    --sunken: 248 250 253;
+    --line: 226 232 240;
+    --line-strong: 203 213 225;
 
-  .dark {
-    /* Dark: the default for a tool that lives next to a terminal */
-    --canvas: 10 12 16;
-    --surface: 16 19 25;
-    --elevated: 23 27 35;
-    --line: 39 45 57;
-    --ink: 232 236 243;
-    --muted: 150 160 178;
-    --faint: 106 116 134;
-    --accent: 96 152 255;
-    --ok: 63 185 108;
-    --warn: 219 152 44;
-    --danger: 248 97 97;
-    --info: 88 166 255;
+    /* --- text ---------------------------------------------------------- */
+    --ink: 15 23 42;
+    --muted: 71 85 105;
+    --faint: 148 163 184;
+
+    /* --- brand --------------------------------------------------------- */
+    --brand: 99 102 241;
+    --brand-strong: 79 70 229;
+    --brand-soft: 238 242 255;
+    --brand-line: 199 210 254;
+    --brand-ink: 67 56 202;
+
+    /* --- status -------------------------------------------------------- */
+    --ok: 16 185 129;
+    --ok-soft: 236 253 245;
+    --ok-line: 167 243 208;
+    --ok-ink: 4 120 87;
+
+    --warn: 245 158 11;
+    --warn-soft: 255 251 235;
+    --warn-line: 253 230 138;
+    --warn-ink: 180 83 9;
+
+    --danger: 244 63 94;
+    --danger-soft: 255 241 242;
+    --danger-line: 254 205 211;
+    --danger-ink: 190 18 60;
+
+    --info: 14 165 233;
+    --info-soft: 240 249 255;
+    --info-line: 186 230 253;
+    --info-ink: 3 105 161;
+
+    --grape: 168 85 247;
+    --grape-soft: 250 245 255;
+    --grape-line: 233 213 255;
+    --grape-ink: 126 34 206;
   }
 
   * {
@@ -52,52 +86,107 @@
     color: rgb(var(--ink));
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv02", "cv03", "cv04";
   }
 
   ::selection {
-    background: rgb(var(--accent) / 0.25);
+    background: rgb(var(--brand) / 0.18);
+    color: rgb(var(--ink));
+  }
+
+  /* One focus treatment for the whole app, so keyboard users get the same
+     affordance on a button, a link, a tab and a table row. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--brand) / 0.55);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
   }
 }
 
 @layer components {
-  .panel {
-    @apply rounded-xl border border-line bg-surface;
-    box-shadow:
-      0 1px 2px 0 rgb(17 24 39 / 0.04),
-      0 14px 30px -18px rgb(17 24 39 / 0.2);
-    transition: box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* ------------------------------------------------------------- surfaces */
+
+  /**
+   * The card. Every bounded region of the app is one of these — white paper
+   * on a faintly tinted canvas, lifted by a blue-grey shadow rather than
+   * outlined by a heavy border.
+   */
+  .card {
+    @apply rounded-card border border-line bg-surface shadow-card;
   }
 
-  .panel:hover {
-    box-shadow:
-      0 1px 2px 0 rgb(17 24 39 / 0.05),
-      0 22px 48px -20px rgb(var(--accent) / 0.28);
+  /** Opts a card into a hover lift. Only for cards you can actually click. */
+  .card-interactive {
+    transition:
+      transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 240ms ease;
   }
 
-  .panel-header {
+  .card-interactive:hover {
+    transform: translateY(-2px);
+    border-color: rgb(var(--brand-line));
+    box-shadow:
+      0 2px 4px -1px rgb(15 23 42 / 0.05),
+      0 20px 40px -18px rgb(var(--brand) / 0.4);
+  }
+
+  .card-header {
     @apply flex items-center justify-between gap-3 border-b border-line px-4 py-3;
   }
 
-  /* Opts a card into a floating hover-lift — the interactive 3D "pop". */
-  .lift {
-    transition:
-      transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  /**
+   * A nested, non-interactive block inside a card: an evidence row, a fact, a
+   * quoted excerpt. Sunken rather than raised, so it never competes with the
+   * card that contains it and never reads as clickable.
+   */
+  .tile {
+    @apply rounded-lg border border-line bg-sunken;
   }
 
-  .lift:hover {
-    transform: translateY(-3px);
+  /** Frosted panel for floating chrome — headers, hero surfaces, popovers. */
+  .glass {
+    background: rgb(255 255 255 / 0.78);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgb(255 255 255 / 0.9);
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.9),
+      0 18px 40px -24px rgb(30 41 59 / 0.35);
   }
+
+  /* --------------------------------------------------------------- text -- */
 
   .mono {
     font-family: var(--font-mono);
     font-variant-ligatures: none;
   }
 
+  /** The one phrase per page that is allowed to be a gradient. */
+  .text-gradient {
+    background: linear-gradient(
+      110deg,
+      rgb(var(--brand-strong)),
+      rgb(var(--grape)) 45%,
+      rgb(var(--info)) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: sheen 7s ease-in-out infinite;
+  }
+
+  .eyebrow {
+    @apply text-2xs font-semibold uppercase tracking-[0.14em] text-brand-ink;
+  }
+
+  /* ---------------------------------------------------------- scrollbars -- */
+
   .scroll-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgb(var(--line)) transparent;
+    scrollbar-color: rgb(var(--line-strong)) transparent;
   }
 
   .scroll-thin::-webkit-scrollbar {
@@ -106,74 +195,48 @@
   }
 
   .scroll-thin::-webkit-scrollbar-thumb {
-    background-color: rgb(var(--line));
-    border-radius: 6px;
+    background-color: rgb(var(--line-strong));
+    border-radius: 999px;
     border: 3px solid transparent;
     background-clip: content-box;
+  }
+
+  .scroll-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--faint));
   }
 
   .scroll-thin::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  /* ---------------------------------------------------------------- 3D --- */
-  /* Tailwind 3.4 ships no 3D transform utilities, so the marketing scenes
-     get them here. `.scene` opens a perspective; children that need real
-     depth opt in with `.depth`. */
-  .scene {
-    perspective: 1400px;
-    perspective-origin: 50% 45%;
+  /* ------------------------------------------------------------ loading -- */
+
+  .skeleton {
+    @apply relative overflow-hidden rounded-md bg-elevated;
   }
 
-  .scene-near {
-    perspective: 800px;
-  }
-
-  .depth {
-    transform-style: preserve-3d;
-  }
-
-  .backface-hidden {
-    backface-visibility: hidden;
-  }
-
-  /* Frosted panel used by every floating surface. Reads as bright glass in the
-     default theme and deep glass in the dark one, from the same tokens. */
-  .glass {
-    background: linear-gradient(
-      145deg,
-      rgb(var(--surface) / 0.94),
-      rgb(var(--elevated) / 0.82)
-    );
-    border: 1px solid rgb(var(--line) / 0.9);
-    backdrop-filter: blur(14px) saturate(150%);
-    box-shadow:
-      0 1px 0 0 rgb(255 255 255 / 0.55) inset,
-      0 20px 50px -22px rgb(var(--accent) / 0.35),
-      0 12px 28px -20px rgb(17 24 39 / 0.28);
-  }
-
-  /* A hairline that catches "light" along the top edge of a floating card. */
-  .edge-lit::before {
+  .skeleton::after {
     content: "";
     position: absolute;
-    inset: 0 0 auto 0;
-    height: 1px;
+    inset: 0;
     background: linear-gradient(
       90deg,
       transparent,
-      rgb(var(--accent) / 0.55),
+      rgb(255 255 255 / 0.85),
       transparent
     );
+    animation: shimmer 1.8s ease-in-out infinite;
   }
 
-  /* Scroll reveal. Starts displaced in depth, settles when observed. */
+  /* ------------------------------------------------------------- motion -- */
+
+  /** Scroll reveal for the public pages. Settles, never freezes mid-flight. */
   .reveal {
     opacity: 0;
-    transform: translate3d(0, 18px, -60px) rotateX(6deg);
+    transform: translateY(16px);
     transition:
-      opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
-      transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+      opacity 620ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
     will-change: transform, opacity;
   }
 
@@ -181,35 +244,69 @@
     opacity: 1;
     transform: none;
   }
-
-  /* Gradient text used for the one phrase that has to land. */
-  .text-glow {
-    background: linear-gradient(
-      120deg,
-      rgb(var(--accent)),
-      rgb(var(--info)),
-      rgb(var(--ok))
-    );
-    background-size: 200% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: sheen 6s ease-in-out infinite;
-  }
 }
 
-/* The perspective floor. Pure CSS, no images, and it pans forever. */
-.grid-floor {
-  background-image:
-    linear-gradient(to right, rgb(var(--accent) / 0.16) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(var(--accent) / 0.16) 1px, transparent 1px);
-  background-size: 44px 44px;
-  transform: rotateX(72deg);
-  transform-origin: 50% 100%;
-  animation: grid-pan 18s linear infinite;
-  mask-image: linear-gradient(to top, black, transparent 72%);
-  -webkit-mask-image: linear-gradient(to top, black, transparent 72%);
+/* -------------------------------------------------------------- backdrop -- */
+
+/**
+ * The daylight wash behind the public and signed-out pages. Pure CSS, so it
+ * costs nothing to load and renders identically on the server.
+ */
+.aurora-blob {
+  border-radius: 9999px;
+  filter: blur(72px);
 }
+
+/** A faint dotted field. Reads as graph paper, not as a dark grid. */
+.dot-field {
+  background-image: radial-gradient(
+    circle at center,
+    rgb(var(--brand) / 0.16) 1px,
+    transparent 1px
+  );
+  background-size: 26px 26px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent 75%);
+  -webkit-mask-image: radial-gradient(
+    ellipse 80% 60% at 50% 40%,
+    black,
+    transparent 75%
+  );
+}
+
+/* ------------------------------------------------------------------ diff -- */
+
+/* Unified-diff colouring, tuned for a white background: the tint carries the
+   meaning and the text stays near-black so code is never washed out. */
+.diff-line-add {
+  background-color: rgb(var(--ok-soft));
+  color: rgb(var(--ink));
+}
+
+.diff-line-add td:first-child,
+.diff-line-add td:nth-child(2) {
+  background-color: rgb(var(--ok) / 0.1);
+}
+
+.diff-line-del {
+  background-color: rgb(var(--danger-soft));
+  color: rgb(var(--ink));
+}
+
+.diff-line-del td:first-child,
+.diff-line-del td:nth-child(2) {
+  background-color: rgb(var(--danger) / 0.09);
+}
+
+.diff-line-meta {
+  color: rgb(var(--faint));
+}
+
+.diff-line-hunk {
+  background-color: rgb(var(--brand-soft));
+  color: rgb(var(--brand-ink));
+}
+
+/* --------------------------------------------------------------- a11y ----- */
 
 @media (prefers-reduced-motion: reduce) {
   .reveal {
@@ -218,8 +315,8 @@
     transition: none;
   }
 
-  .grid-floor,
-  .text-glow {
+  .text-gradient,
+  .skeleton::after {
     animation: none;
   }
 
@@ -232,22 +329,12 @@
   }
 }
 
-/* Unified-diff colouring, tuned so additions/removals stay legible in both themes. */
-.diff-line-add {
-  background-color: rgb(var(--ok) / 0.13);
-  color: rgb(var(--ink));
-}
+@media print {
+  body {
+    background: #fff;
+  }
 
-.diff-line-del {
-  background-color: rgb(var(--danger) / 0.13);
-  color: rgb(var(--ink));
-}
-
-.diff-line-meta {
-  color: rgb(var(--faint));
-}
-
-.diff-line-hunk {
-  background-color: rgb(var(--accent) / 0.1);
-  color: rgb(var(--accent));
+  .card {
+    box-shadow: none;
+  }
 }

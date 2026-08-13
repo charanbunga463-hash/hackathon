@@ -511,6 +511,11 @@ export interface HistoryEntry {
 
 /* ---------------------------------------------------------------- account -- */
 
+/**
+ * Still stored and returned by the backend, but this UI ships a single light
+ * theme and never reads it. Kept on the type so the shape matches what
+ * `/api/account/preferences` actually sends.
+ */
 export type Theme = "system" | "light" | "dark";
 
 /**
@@ -519,7 +524,7 @@ export type Theme = "system" | "light" | "dark";
  * the code that reads each one.
  */
 export interface UserPreferences {
-  /** Colour scheme for this UI. */
+  /** Legacy colour-scheme preference. Ignored by the UI; see `Theme`. */
   theme: Theme;
   /** Per-endpoint timeout applied when testing a project's API. */
   api_timeout_seconds: number;

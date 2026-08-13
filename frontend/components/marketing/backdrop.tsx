@@ -1,45 +1,32 @@
 /**
- * The atmosphere behind the public pages.
+ * Daylight behind the public pages.
  *
  * Entirely CSS — no images, no canvas, no JS — so it costs nothing to load and
- * renders identically on the server. Everything is built from the theme tokens,
- * which is why it reads as daylight in the light theme and deep space in the
- * dark one without a second set of colours.
+ * renders identically on the server. Three pale, slowly drifting washes plus a
+ * dot field, all pinned behind the content and kept faint enough that text on
+ * top never loses contrast.
  */
-export function Backdrop({ floor = true }: { floor?: boolean }) {
+export function Backdrop({ dots = true }: { dots?: boolean }) {
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-    >
-      {/* Aurora field. Three slow, out-of-phase blobs; the offsets keep them
-          from ever lining up into an obvious shape. */}
-      <div className="absolute -left-[10%] -top-[20%] h-[45rem] w-[45rem] rounded-full bg-[radial-gradient(circle,rgb(var(--accent)/0.22),transparent_65%)] blur-3xl animate-drift" />
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {/* The canvas itself, warmed with a wash from the top. */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white via-canvas to-canvas" />
+
+      {/* Aurora. Out-of-phase durations keep the three from ever lining up. */}
+      <div className="aurora-blob absolute -left-[12%] -top-[18%] h-[38rem] w-[38rem] bg-brand/20 animate-drift" />
       <div
-        className="absolute -right-[15%] top-[5%] h-[38rem] w-[38rem] rounded-full bg-[radial-gradient(circle,rgb(var(--info)/0.18),transparent_65%)] blur-3xl animate-drift"
-        style={{ animationDelay: "-7s", animationDuration: "26s" }}
+        className="aurora-blob absolute -right-[14%] top-[2%] h-[32rem] w-[32rem] bg-info/16 animate-drift"
+        style={{ animationDelay: "-8s", animationDuration: "28s" }}
       />
       <div
-        className="absolute left-[25%] top-[45%] h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle,rgb(var(--ok)/0.12),transparent_65%)] blur-3xl animate-drift"
-        style={{ animationDelay: "-14s", animationDuration: "30s" }}
+        className="aurora-blob absolute left-[22%] top-[52%] h-[34rem] w-[34rem] bg-grape/14 animate-drift"
+        style={{ animationDelay: "-15s", animationDuration: "32s" }}
       />
 
-      {/* The floor. Laid flat in 3D and panned toward the viewer, so the page
-          sits in a space rather than on a surface. Suppressed on data-dense
-          app pages where it would sit behind tables. */}
-      {floor ? (
-        <div className="scene absolute inset-x-0 bottom-0 h-[55vh]">
-          <div className="grid-floor depth h-full w-full" />
-        </div>
-      ) : null}
+      {dots ? <div className="dot-field absolute inset-x-0 top-0 h-[70vh]" /> : null}
 
-      {/* Grain. Breaks up the gradient banding that large blurred blobs cause
-          on 8-bit displays. */}
-      <div className="absolute inset-0 opacity-[0.15] mix-blend-overlay [background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%224%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%220.5%22/></svg>')]" />
-
-      {/* Settles the top of the page back to the canvas colour so the header
-          keeps its contrast. */}
-      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-canvas to-transparent" />
+      {/* Settles the very top back to white so sticky chrome keeps its edge. */}
+      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white to-transparent" />
     </div>
   );
 }

@@ -7,6 +7,8 @@ import {
   FileCode2,
   FlaskConical,
   Globe,
+  History,
+  LayoutGrid,
   PlayCircle,
   RefreshCw,
   Route as RouteIcon,
@@ -30,10 +32,13 @@ import {
 import {
   Badge,
   Button,
+  Card,
+  CardHeader,
   EmptyState,
   ErrorNote,
-  Panel,
-  PanelHeader,
+  IconTile,
+  KeyValue,
+  LinkButton,
   Spinner,
   Tabs,
 } from "@/components/ui/primitives";
@@ -51,7 +56,7 @@ import {
   runTests,
   startRepair,
 } from "@/lib/api";
-import { SEVERITY_TONE, formatRelative, statusCodeTone } from "@/lib/utils";
+import { formatRelative, statusCodeTone } from "@/lib/utils";
 import type {
   DiagnosisResult,
   ExecutionRecord,
@@ -69,9 +74,12 @@ export default function ProjectDetailPage() {
   const [busy, setBusy] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [execution, setExecution] = React.useState<ExecutionRecord | null>(null);
-  const [diagnosis, setDiagnosis] = React.useState<
-    { failure: NormalizedFailure; diagnosis: DiagnosisResult; facts: string[]; note: string } | null
-  >(null);
+  const [diagnosis, setDiagnosis] = React.useState<{
+    failure: NormalizedFailure;
+    diagnosis: DiagnosisResult;
+    facts: string[];
+    note: string;
+  } | null>(null);
 
   // Poll fast only while a repair is actually in flight.
   //
@@ -118,7 +126,9 @@ export default function ProjectDetailPage() {
   }, [latest]);
 
   const record = execution ?? latest?.record ?? null;
-  const failures = record ? (record.test_result?.failures ?? record.api_result?.failures ?? []) : [];
+  const failures = record
+    ? (record.test_result?.failures ?? record.api_result?.failures ?? [])
+    : [];
   const running = active?.running ?? false;
   const session = active?.session ?? null;
 
@@ -189,29 +199,45 @@ export default function ProjectDetailPage() {
   const metadata = project.metadata;
 
   return (
-    <div className="space-y-5">
-      <header className="space-y-2">
+    <div className="space-y-5 animate-fade-up">
+      {/* --------------------------------------------------------- header */}
+      <header className="space-y-4">
         <Link
           href="/projects"
-          className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted transition-colors hover:text-brand-ink"
         >
-          <ArrowLeft className="h-3 w-3" /> All projects
+          <ArrowLeft className="h-3.5 w-3.5" /> All projects
         </Link>
-        <div className="flex flex-wrap items-start justify-between gap-3">
+
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight text-ink">
-              {project.name}
-            </h1>
-            <p className="truncate text-xs text-muted">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="truncate text-2xl font-bold tracking-tight text-ink">
+                {project.name}
+              </h1>
+              <Badge tone="muted">{project.status}</Badge>
+            </div>
+            <p className="mt-1 truncate text-sm text-muted">
               {project.description ?? project.origin ?? project.source}
             </p>
           </div>
+
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" loading={busy === "analyze"} disabled={busy !== null} onClick={onAnalyze}>
+            <Button
+              size="sm"
+              loading={busy === "analyze"}
+              disabled={busy !== null}
+              onClick={onAnalyze}
+            >
               <RefreshCw className="h-3.5 w-3.5" />
-              {busy === "analyze" ? "Analyzing…" : "Analyze"}
+              {busy === "analyze" ? "Analysing…" : "Analyse"}
             </Button>
-            <Button size="sm" loading={busy === "tests"} disabled={busy !== null} onClick={onRunTests}>
+            <Button
+              size="sm"
+              loading={busy === "tests"}
+              disabled={busy !== null}
+              onClick={onRunTests}
+            >
               <FlaskConical className="h-3.5 w-3.5" />
               {busy === "tests" ? "Running tests…" : "Run tests"}
             </Button>
@@ -234,15 +260,16 @@ export default function ProjectDetailPage() {
               <Wrench className="h-3.5 w-3.5" />
               {running ? "Repair running…" : "Repair"}
             </Button>
-            <a
+            <LinkButton
               href={exportProjectUrl(projectId)}
               download
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-xs font-medium h-7 px-2.5 border border-line bg-elevated text-ink hover:bg-line/40 transition-colors"
-              title="Download fixed project code as a ZIP archive"
+              size="sm"
+              variant="secondary"
+              title="Download the project workspace as a ZIP archive"
             >
-              <Download className="h-3.5 w-3.5 text-accent" />
-              Export Fixed Zip
-            </a>
+              <Download className="h-3.5 w-3.5" />
+              Export ZIP
+            </LinkButton>
           </div>
         </div>
       </header>
@@ -253,52 +280,79 @@ export default function ProjectDetailPage() {
         active={tab}
         onChange={setTab}
         tabs={[
-          { id: "overview", label: "Overview" },
-          { id: "failures", label: "Failures", count: failures.length },
-          { id: "repair", label: "Repair", count: session ? session.attempts.length : undefined },
-          { id: "history", label: "History" },
-          { id: "code", label: "Code" },
+          { id: "overview", label: "Overview", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
+          {
+            id: "failures",
+            label: "Failures",
+            count: failures.length,
+            icon: <Bug className="h-3.5 w-3.5" />,
+          },
+          {
+            id: "repair",
+            label: "Repair",
+            count: session ? session.attempts.length : undefined,
+            icon: <Wrench className="h-3.5 w-3.5" />,
+          },
+          { id: "history", label: "History", icon: <History className="h-3.5 w-3.5" /> },
+          { id: "code", label: "Code", icon: <FileCode2 className="h-3.5 w-3.5" /> },
         ]}
       />
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
-        <div className="min-w-0 space-y-4">
+      <div className="grid gap-5 xl:grid-cols-[1fr_22rem]">
+        <div className="min-w-0 space-y-5">
+          {/* ------------------------------------------------------ overview */}
           {tab === "overview" ? (
             <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Panel>
-                  <PanelHeader title="Project" icon={<Stethoscope className="h-4 w-4" />} />
-                  <div className="space-y-2 p-4 text-xs">
-                    <Row label="Language" value={metadata?.language ?? "—"} />
-                    <Row label="Framework" value={metadata?.framework ?? "—"} />
-                    <Row label="Entry point" value={metadata?.entry_point ?? "—"} mono />
-                    <Row label="Test framework" value={metadata?.test_framework ?? "—"} />
-                    <Row label="Files" value={String(metadata?.file_count ?? 0)} />
-                    <Row label="Status" value={<Badge tone="muted">{project.status}</Badge>} />
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card>
+                  <CardHeader
+                    title="Project"
+                    icon={
+                      <IconTile tone="brand" size="sm">
+                        <Stethoscope className="h-3.5 w-3.5" />
+                      </IconTile>
+                    }
+                  />
+                  <div className="p-4">
+                    <KeyValue label="Language">{metadata?.language ?? "—"}</KeyValue>
+                    <KeyValue label="Framework">{metadata?.framework ?? "—"}</KeyValue>
+                    <KeyValue label="Entry point" mono>
+                      {metadata?.entry_point ?? "—"}
+                    </KeyValue>
+                    <KeyValue label="Test framework">{metadata?.test_framework ?? "—"}</KeyValue>
+                    <KeyValue label="Files">{String(metadata?.file_count ?? 0)}</KeyValue>
+                    <KeyValue label="Routes">{String(metadata?.routes.length ?? 0)}</KeyValue>
                   </div>
-                </Panel>
-                <Panel>
-                  <PanelHeader
+                </Card>
+
+                <Card>
+                  <CardHeader
                     title="Latest run"
-                    icon={<FlaskConical className="h-4 w-4" />}
                     subtitle={record ? formatRelative(record.created_at) : "not run yet"}
+                    icon={
+                      <IconTile tone="info" size="sm">
+                        <FlaskConical className="h-3.5 w-3.5" />
+                      </IconTile>
+                    }
                   />
                   <div className="p-4">
                     {record?.test_result ? (
                       <TestRunSummary run={record.test_result} />
                     ) : record?.api_result ? (
-                      <div className="space-y-2 text-xs">
-                        <p className="text-muted text-xs leading-relaxed break-words [overflow-wrap:anywhere]">{record.label}</p>
-                        <ul className="space-y-1">
+                      <div className="space-y-2.5">
+                        <p className="break-words text-xs leading-relaxed text-muted [overflow-wrap:anywhere]">
+                          {record.label}
+                        </p>
+                        <ul className="space-y-1.5">
                           {record.api_result.probes.slice(0, 8).map((probe, index) => (
-                            <li key={index} className="flex items-center gap-2">
+                            <li key={index} className="flex items-center gap-2 text-xs">
                               <Badge tone={statusCodeTone(probe.status_code)}>
                                 {probe.status_code ?? "ERR"}
                               </Badge>
                               <span className="mono truncate text-muted">
                                 {probe.method} {probe.path}
                               </span>
-                              <span className="ml-auto shrink-0 text-faint">
+                              <span className="ml-auto shrink-0 tabular-nums text-faint">
                                 {probe.latency_ms}ms
                               </span>
                             </li>
@@ -307,31 +361,44 @@ export default function ProjectDetailPage() {
                       </div>
                     ) : (
                       <EmptyState
+                        icon={<PlayCircle className="h-5 w-5" />}
                         title="Nothing run yet"
                         description="Run the test suite or probe the API to detect failures."
+                        action={
+                          <Button size="sm" loading={busy === "tests"} onClick={onRunTests}>
+                            Run tests
+                          </Button>
+                        }
                       />
                     )}
                   </div>
-                </Panel>
+                </Card>
               </div>
 
-              <Panel>
-                <PanelHeader
+              <Card className="overflow-hidden">
+                <CardHeader
                   title="Discovered API surface"
                   subtitle={`${metadata?.routes.length ?? 0} route(s) found by static analysis`}
-                  icon={<RouteIcon className="h-4 w-4" />}
+                  icon={
+                    <IconTile tone="grape" size="sm">
+                      <RouteIcon className="h-3.5 w-3.5" />
+                    </IconTile>
+                  }
                 />
                 {metadata?.routes.length ? (
-                  <div className="scroll-thin max-h-72 overflow-y-auto">
+                  <div className="scroll-thin max-h-80 overflow-auto">
                     <table className="w-full text-xs">
                       <tbody className="divide-y divide-line">
                         {metadata.routes.map((route) => (
-                          <tr key={`${route.method}-${route.path}`} className="hover:bg-elevated/50">
-                            <td className="w-20 px-4 py-2">
-                              <Badge tone="accent">{route.method}</Badge>
+                          <tr
+                            key={`${route.method}-${route.path}`}
+                            className="transition-colors hover:bg-brand-soft/40"
+                          >
+                            <td className="w-24 px-4 py-2.5">
+                              <Badge tone="brand">{route.method}</Badge>
                             </td>
-                            <td className="mono px-2 py-2 text-ink">{route.path}</td>
-                            <td className="mono px-2 py-2 text-right text-faint">
+                            <td className="mono px-2 py-2.5 font-medium text-ink">{route.path}</td>
+                            <td className="mono px-4 py-2.5 text-right text-2xs text-faint">
                               {route.file}:{route.line}
                             </td>
                           </tr>
@@ -340,43 +407,53 @@ export default function ProjectDetailPage() {
                     </table>
                   </div>
                 ) : (
-                  <EmptyState title="No routes discovered" description="Run Analyze to re-scan the workspace." />
+                  <EmptyState
+                    icon={<RouteIcon className="h-5 w-5" />}
+                    title="No routes discovered"
+                    description="Run Analyse to re-scan the workspace."
+                  />
                 )}
-              </Panel>
+              </Card>
 
               {metadata?.notes.length ? (
-                <Panel>
-                  <PanelHeader title="Analyzer notes" />
-                  <ul className="space-y-1 p-4 text-xs text-muted">
+                <Card>
+                  <CardHeader title="Analyser notes" />
+                  <ul className="space-y-1.5 p-4 text-xs text-muted">
                     {metadata.notes.map((note, index) => (
-                      <li key={index}>• {note}</li>
+                      <li key={index} className="flex gap-2">
+                        <span className="text-brand" aria-hidden>
+                          ›
+                        </span>
+                        <span className="min-w-0">{note}</span>
+                      </li>
                     ))}
                   </ul>
-                </Panel>
+                </Card>
               ) : null}
             </>
           ) : null}
 
+          {/* ------------------------------------------------------ failures */}
           {tab === "failures" ? (
             <>
               {!failures.length ? (
-                <Panel>
+                <Card>
                   <EmptyState
-                    icon={<Bug className="h-7 w-7" />}
+                    icon={<Bug className="h-5 w-5" />}
                     title="No failures detected"
-                    description="Run the test suite or probe the API. Failures found there appear here with their normalized error, file and line."
+                    description="Run the test suite or probe the API. Failures found there appear here with their normalised error, file and line."
                     action={
-                      <Button size="sm" loading={busy === "tests"} onClick={onRunTests}>
-                        <PlayCircle className="h-3.5 w-3.5" /> Run tests
+                      <Button variant="primary" loading={busy === "tests"} onClick={onRunTests}>
+                        <PlayCircle className="h-4 w-4" /> Run tests
                       </Button>
                     }
                   />
-                </Panel>
+                </Card>
               ) : (
                 <div className="space-y-3">
                   {failures.map((failure) => (
-                    <Panel key={failure.id}>
-                      <div className="space-y-3 p-4">
+                    <Card key={failure.id} className="border-l-4 border-l-danger">
+                      <div className="space-y-4 p-4">
                         <FailureHeader failure={failure} />
                         <div className="flex flex-wrap gap-2">
                           <Button
@@ -386,7 +463,7 @@ export default function ProjectDetailPage() {
                             onClick={() => onDiagnose(failure.id)}
                           >
                             <Stethoscope className="h-3.5 w-3.5" />
-                            {busy === "diagnose" ? "Analyzing API response…" : "Diagnose"}
+                            {busy === "diagnose" ? "Investigating…" : "Diagnose"}
                           </Button>
                           <Button
                             size="sm"
@@ -400,31 +477,35 @@ export default function ProjectDetailPage() {
                           </Button>
                         </div>
                         {failure.traceback ? (
-                          <details>
-                            <summary className="cursor-pointer text-2xs text-muted hover:text-ink">
+                          <details className="overflow-hidden rounded-xl border border-line">
+                            <summary className="cursor-pointer bg-elevated/60 px-3.5 py-2 text-2xs font-semibold text-muted transition-colors hover:text-ink">
                               Stack trace
                             </summary>
-                            <pre className="mono scroll-thin mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded border border-line bg-canvas p-2.5 text-2xs text-muted">
+                            <pre className="mono scroll-thin max-h-72 overflow-auto whitespace-pre-wrap border-t border-line bg-sunken p-3 text-2xs leading-relaxed text-muted">
                               {failure.traceback}
                             </pre>
                           </details>
                         ) : null}
                       </div>
-                    </Panel>
+                    </Card>
                   ))}
                 </div>
               )}
 
               {diagnosis ? (
-                <Panel>
-                  <PanelHeader
+                <Card>
+                  <CardHeader
                     title="Diagnosis"
                     subtitle="Read-only investigation — nothing was written to your files"
-                    icon={<Stethoscope className="h-4 w-4" />}
+                    icon={
+                      <IconTile tone="brand" size="sm">
+                        <Stethoscope className="h-3.5 w-3.5" />
+                      </IconTile>
+                    }
                   />
                   <div className="space-y-4 p-4">
                     {diagnosis.note ? (
-                      <p className="rounded border border-line bg-elevated p-2 text-2xs text-muted">
+                      <p className="rounded-lg border border-line bg-sunken px-3 py-2 text-2xs text-muted">
                         {diagnosis.note}
                       </p>
                     ) : null}
@@ -434,21 +515,22 @@ export default function ProjectDetailPage() {
                       observedFacts={diagnosis.facts}
                     />
                   </div>
-                </Panel>
+                </Card>
               ) : null}
 
               {record?.test_result ? (
-                <Panel>
-                  <PanelHeader title="Test output" />
+                <Card>
+                  <CardHeader title="Test output" />
                   <div className="space-y-3 p-4">
                     <FailingTestList run={record.test_result} />
                     <TestOutput run={record.test_result} />
                   </div>
-                </Panel>
+                </Card>
               ) : null}
             </>
           ) : null}
 
+          {/* -------------------------------------------------------- repair */}
           {tab === "repair" ? (
             session ? (
               <RepairSessionView
@@ -461,24 +543,23 @@ export default function ProjectDetailPage() {
                 }}
               />
             ) : (
-              <Panel>
+              <Card>
                 <EmptyState
-                  icon={<Wrench className="h-7 w-7" />}
+                  icon={<Wrench className="h-5 w-5" />}
                   title="No repair session yet"
                   description="Detect a failure first, then start a repair. The agent will investigate, propose a minimal patch for your approval, apply it, and verify the result against the real test suite."
                   action={
                     <Button
-                      size="sm"
                       variant="primary"
                       disabled={!failures.length}
                       loading={busy === "repair"}
                       onClick={() => onRepair(failures[0]?.id)}
                     >
-                      <Wrench className="h-3.5 w-3.5" /> Start repair
+                      <Wrench className="h-4 w-4" /> Start repair
                     </Button>
                   }
                 />
-              </Panel>
+              </Card>
             )
           ) : null}
 
@@ -487,14 +568,14 @@ export default function ProjectDetailPage() {
           {tab === "code" ? <CodeBrowser projectId={projectId} /> : null}
         </div>
 
-        <Panel className="flex h-[calc(100vh-13rem)] max-h-[700px] min-h-[420px] flex-col overflow-hidden xl:sticky xl:top-6">
+        {/* ------------------------------------------------------- live feed */}
+        <Card className="flex h-[calc(100vh-9rem)] max-h-[44rem] min-h-[26rem] flex-col overflow-hidden xl:sticky xl:top-20">
           <ActivityStream
             events={events}
             connected={connected}
-            className="flex-1 min-h-0 h-full overflow-hidden"
             emptyHint="Run tests or start a repair to watch each agent step stream in."
           />
-        </Panel>
+        </Card>
       </div>
     </div>
   );
@@ -516,40 +597,27 @@ function CodeBrowser({ projectId }: { projectId: string }) {
   }, [projectId, selected]);
 
   return (
-    <Panel className="overflow-hidden">
-      <PanelHeader
+    <Card className="overflow-hidden">
+      <CardHeader
         title="Workspace"
         subtitle={selected ?? "Browse the project source"}
-        icon={<FileCode2 className="h-4 w-4" />}
+        icon={
+          <IconTile tone="info" size="sm">
+            <FileCode2 className="h-3.5 w-3.5" />
+          </IconTile>
+        }
       />
-      <div className="grid h-[600px] grid-cols-1 md:grid-cols-[240px_1fr]">
+      <div className="grid h-[36rem] grid-cols-1 md:grid-cols-[15rem_1fr]">
         <div className="border-b border-line md:border-b-0 md:border-r">
           <FileTree
             nodes={tree?.tree ?? []}
             selected={selected}
             onSelect={setSelected}
-            className="h-full max-h-[600px]"
+            className="h-full max-h-[36rem]"
           />
         </div>
-        <CodeView file={file} loading={loading} className="h-full max-h-[600px]" />
+        <CodeView file={file} loading={loading} className="h-full max-h-[36rem]" />
       </div>
-    </Panel>
-  );
-}
-
-function Row({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-muted">{label}</span>
-      <span className={mono ? "mono truncate text-ink" : "text-ink"}>{value}</span>
-    </div>
+    </Card>
   );
 }

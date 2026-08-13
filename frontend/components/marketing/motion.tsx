@@ -26,9 +26,8 @@ function prefersReducedMotion(): boolean {
 /* --------------------------------------------------------------- reveal --- */
 
 /**
- * Fades and lifts its children out of depth the first time they scroll into
- * view. One-shot: the observer disconnects after firing, so scrolling back up
- * does not replay it.
+ * Fades and lifts its children the first time they scroll into view. One-shot:
+ * the observer disconnects after firing, so scrolling back up does not replay.
  */
 export function Reveal({
   children,
@@ -79,9 +78,9 @@ export function Reveal({
 /* ----------------------------------------------------------------- tilt --- */
 
 /**
- * Tilts toward the pointer in real 3D, with a specular highlight that tracks
- * the cursor. Children can use `translateZ` to sit at their own depth, which is
- * what makes the card read as an object rather than a picture of one.
+ * A restrained tilt toward the pointer, with a pale highlight that tracks the
+ * cursor. Small angles on purpose: on a bright, paper-like surface a large
+ * rotation reads as a gimmick, a two-degree one reads as light moving.
  *
  * Pointer maths runs through `requestAnimationFrame` so a fast mouse cannot
  * queue more style writes than the display can show.
@@ -89,7 +88,7 @@ export function Reveal({
 export function Tilt({
   children,
   className,
-  strength = 9,
+  strength = 5,
   glare = true,
 }: {
   children: React.ReactNode;
@@ -141,12 +140,13 @@ export function Tilt({
   }, [strength]);
 
   return (
-    <div className="scene-near">
+    <div style={{ perspective: "1000px" }}>
       <div
         ref={ref}
         className={cn(
-          "depth relative transition-transform duration-300 ease-out",
+          "relative transition-transform duration-300 ease-out",
           "[transform:rotateX(var(--rx,0deg))_rotateY(var(--ry,0deg))]",
+          "motion-reduce:!transform-none",
           className,
         )}
       >
@@ -154,58 +154,10 @@ export function Tilt({
         {glare ? (
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-300 [background:radial-gradient(340px_circle_at_var(--mx,50%)_var(--my,50%),rgb(var(--accent)/0.14),transparent_60%)] group-hover:opacity-100"
+            className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-300 [background:radial-gradient(320px_circle_at_var(--mx,50%)_var(--my,50%),rgb(var(--brand)/0.1),transparent_62%)] group-hover:opacity-100"
           />
         ) : null}
       </div>
     </div>
   );
-}
-
-/* --------------------------------------------------------------- parallax -- */
-
-/**
- * Shifts the whole hero scene against the pointer. Returns the ref to attach to
- * the scene root; layers inside read `--px`/`--py` to move by their own factor,
- * which is what produces separation between them.
- */
-export function usePointerParallax<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const frame = useRef<number | null>(null);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node || prefersReducedMotion()) return;
-    if (window.matchMedia("(pointer: coarse)").matches) return;
-
-    const onMove = (event: PointerEvent) => {
-      if (frame.current !== null) return;
-      frame.current = requestAnimationFrame(() => {
-        frame.current = null;
-        const rect = node.getBoundingClientRect();
-        // -1..1 from the centre of the scene.
-        const px = (event.clientX - rect.left) / rect.width - 0.5;
-        const py = (event.clientY - rect.top) / rect.height - 0.5;
-        node.style.setProperty("--px", px.toFixed(4));
-        node.style.setProperty("--py", py.toFixed(4));
-      });
-    };
-
-    const onLeave = () => {
-      node.style.setProperty("--px", "0");
-      node.style.setProperty("--py", "0");
-    };
-
-    // Listening on the window keeps the scene alive while the pointer travels
-    // over the copy beside it, which is where a visitor's cursor actually sits.
-    window.addEventListener("pointermove", onMove);
-    node.addEventListener("pointerleave", onLeave);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      node.removeEventListener("pointerleave", onLeave);
-      if (frame.current !== null) cancelAnimationFrame(frame.current);
-    };
-  }, []);
-
-  return ref;
 }

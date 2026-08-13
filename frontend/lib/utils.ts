@@ -7,6 +7,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * The semantic colour vocabulary of the whole UI.
+ *
+ * It lives here rather than in the component library because the maps below —
+ * verdicts, severities, HTTP status classes — are the things that *decide* a
+ * tone, and they must not be able to name one that has no styling.
+ */
+export type Tone = "ok" | "warn" | "danger" | "info" | "brand" | "grape" | "muted";
+
 export function formatDuration(ms: number): string {
   if (!ms || ms < 0) return "—";
   if (ms < 1000) return `${Math.round(ms)}ms`;
@@ -64,7 +73,7 @@ export const VERDICT_LABEL: Record<RepairVerdict, string> = {
   error: "Run failed",
 };
 
-export const VERDICT_TONE: Record<RepairVerdict, "ok" | "warn" | "danger" | "info" | "muted"> = {
+export const VERDICT_TONE: Record<RepairVerdict, Tone> = {
   pending: "info",
   no_failure_detected: "muted",
   awaiting_approval: "warn",
@@ -76,14 +85,14 @@ export const VERDICT_TONE: Record<RepairVerdict, "ok" | "warn" | "danger" | "inf
   error: "danger",
 };
 
-export const SEVERITY_TONE: Record<Severity, "danger" | "warn" | "info" | "muted"> = {
+export const SEVERITY_TONE: Record<Severity, Tone> = {
   critical: "danger",
   high: "danger",
   medium: "warn",
   low: "info",
 };
 
-export function statusCodeTone(code?: number | null): "ok" | "warn" | "danger" | "muted" {
+export function statusCodeTone(code?: number | null): Tone {
   if (!code) return "muted";
   if (code >= 500) return "danger";
   if (code >= 400) return "warn";

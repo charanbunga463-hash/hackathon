@@ -109,7 +109,7 @@ function VerifyOtpForm() {
         </p>
         <p className="text-2xs text-faint">
           Wrong address?{" "}
-          <Link href="/register" className="text-accent hover:underline">
+          <Link href="/register" className="font-semibold text-brand-ink hover:underline">
             Start over
           </Link>
         </p>
@@ -125,7 +125,7 @@ function VerifyOtpForm() {
  */
 export default function VerifyOtpPage() {
   return (
-    <Suspense fallback={<div className="panel h-64 animate-pulse" />}>
+    <Suspense fallback={<div className="skeleton h-80 rounded-[1.25rem]" />}>
       <VerifyOtpForm />
     </Suspense>
   );

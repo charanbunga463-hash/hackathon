@@ -68,6 +68,13 @@ export function parseUnifiedDiff(diff: string): DiffFile[] {
   return files.filter((file) => file.lines.length > 0);
 }
 
+/**
+ * A unified diff, rendered light.
+ *
+ * Additions and removals are washed in pale green and rose rather than being
+ * inverted, so the code itself stays near-black and readable — the tint is the
+ * annotation, not the content.
+ */
 export function DiffView({
   diff,
   className,
@@ -82,7 +89,7 @@ export function DiffView({
   if (!diff || files.length === 0) {
     return (
       <EmptyState
-        icon={<FileDiff className="h-7 w-7" />}
+        icon={<FileDiff className="h-5 w-5" />}
         title="No diff"
         description={emptyMessage}
       />
@@ -92,21 +99,21 @@ export function DiffView({
   return (
     <div className={cn("space-y-3", className)}>
       {files.map((file) => (
-        <div key={file.path} className="overflow-hidden rounded-md border border-line">
-          <div className="flex items-center justify-between gap-3 border-b border-line bg-elevated px-3 py-2">
-            <span className="mono truncate text-xs text-ink">{file.path}</span>
-            <span className="flex shrink-0 items-center gap-2 text-2xs">
-              <span className="flex items-center gap-0.5 text-ok">
-                <Plus className="h-3 w-3" aria-hidden />
+        <div key={file.path} className="overflow-hidden rounded-xl border border-line">
+          <div className="flex items-center justify-between gap-3 border-b border-line bg-elevated/70 px-3.5 py-2.5">
+            <span className="mono truncate text-xs font-semibold text-ink">{file.path}</span>
+            <span className="flex shrink-0 items-center gap-2 text-2xs font-bold tabular-nums">
+              <span className="flex items-center gap-0.5 rounded-full border border-ok-line bg-ok-soft px-1.5 py-0.5 text-ok-ink">
+                <Plus className="h-2.5 w-2.5" aria-hidden />
                 {file.added}
               </span>
-              <span className="flex items-center gap-0.5 text-danger">
-                <Minus className="h-3 w-3" aria-hidden />
+              <span className="flex items-center gap-0.5 rounded-full border border-danger-line bg-danger-soft px-1.5 py-0.5 text-danger-ink">
+                <Minus className="h-2.5 w-2.5" aria-hidden />
                 {file.removed}
               </span>
             </span>
           </div>
-          <div className="scroll-thin overflow-x-auto">
+          <div className="scroll-thin overflow-x-auto bg-surface">
             <table className="w-full border-collapse">
               <tbody className="mono text-xs">
                 {file.lines.map((line, index) => (
@@ -119,17 +126,17 @@ export function DiffView({
                       line.kind === "meta" && "diff-line-meta",
                     )}
                   >
-                    <td className="w-11 select-none border-r border-line/60 px-2 text-right align-top text-faint">
+                    <td className="w-11 select-none border-r border-line px-2 text-right align-top text-2xs text-faint">
                       {line.oldNumber ?? ""}
                     </td>
-                    <td className="w-11 select-none border-r border-line/60 px-2 text-right align-top text-faint">
+                    <td className="w-11 select-none border-r border-line px-2 text-right align-top text-2xs text-faint">
                       {line.newNumber ?? ""}
                     </td>
-                    <td className="w-5 select-none px-1 text-center align-top text-faint">
-                      {line.kind === "add" ? "+" : line.kind === "del" ? "-" : ""}
+                    <td className="w-5 select-none px-1 text-center align-top font-bold text-faint">
+                      {line.kind === "add" ? "+" : line.kind === "del" ? "−" : ""}
                     </td>
-                    <td className="whitespace-pre px-2 align-top">
-                      {line.text || " "}
+                    <td className="whitespace-pre px-2 align-top leading-relaxed">
+                      {line.text || " "}
                     </td>
                   </tr>
                 ))}
@@ -148,12 +155,12 @@ export function DiffStats({ diff }: { diff?: string | null }) {
   const removed = files.reduce((sum, file) => sum + file.removed, 0);
   if (!files.length) return null;
   return (
-    <span className="flex items-center gap-2 text-2xs">
+    <span className="flex items-center gap-2 text-2xs font-semibold tabular-nums">
       <span className="text-muted">
         {files.length} file{files.length === 1 ? "" : "s"}
       </span>
-      <span className="text-ok">+{added}</span>
-      <span className="text-danger">−{removed}</span>
+      <span className="text-ok-ink">+{added}</span>
+      <span className="text-danger-ink">−{removed}</span>
     </span>
   );
 }

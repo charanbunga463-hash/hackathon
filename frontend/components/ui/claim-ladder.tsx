@@ -1,15 +1,10 @@
 "use client";
 
-import {
-  BadgeCheck,
-  Eye,
-  FlaskConical,
-  HelpCircle,
-  ShieldCheck,
-  Wrench,
-} from "lucide-react";
+import { BadgeCheck, Eye, FlaskConical, HelpCircle, ShieldCheck, Wrench } from "lucide-react";
 import * as React from "react";
 
+import type { Tone } from "@/components/ui/primitives";
+import { TONE_SOFT } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,6 +13,10 @@ import { cn } from "@/lib/utils";
  * Every statement the product makes is tagged with what kind of claim it is.
  * This component is the single place that styling lives, so an OBSERVED FACT
  * can never accidentally be rendered with the same weight as a VERIFIED RESULT.
+ *
+ * The tones climb deliberately: neutral for raw output, blue for something
+ * measured, amber for a guess, indigo for a conclusion, green only for a fact
+ * proven by a real test run.
  */
 export type ClaimKind =
   | "observed"
@@ -29,42 +28,42 @@ export type ClaimKind =
 
 const CLAIMS: Record<
   ClaimKind,
-  { label: string; icon: React.ElementType; classes: string; blurb: string }
+  { label: string; icon: React.ElementType; tone: Tone; blurb: string }
 > = {
   observed: {
     label: "OBSERVED FACT",
     icon: Eye,
-    classes: "border-info/30 bg-info/10 text-info",
+    tone: "info",
     blurb: "Measured directly from a run or read from a file.",
   },
   hypothesis: {
     label: "HYPOTHESIS",
     icon: HelpCircle,
-    classes: "border-warn/30 bg-warn/10 text-warn",
+    tone: "warn",
     blurb: "A candidate explanation. Not yet established.",
   },
   root_cause: {
     label: "ROOT CAUSE",
     icon: Wrench,
-    classes: "border-accent/30 bg-accent/10 text-accent",
+    tone: "brand",
     blurb: "The defect the evidence points to.",
   },
   proposed_fix: {
     label: "PROPOSED FIX",
     icon: Wrench,
-    classes: "border-accent/30 bg-accent/10 text-accent",
+    tone: "grape",
     blurb: "A change that has not been applied or proven.",
   },
   test_result: {
     label: "TEST RESULT",
     icon: FlaskConical,
-    classes: "border-line bg-elevated text-muted",
+    tone: "muted",
     blurb: "The raw outcome of running the project's tests.",
   },
   verified: {
     label: "VERIFIED RESULT",
     icon: ShieldCheck,
-    classes: "border-ok/40 bg-ok/10 text-ok",
+    tone: "ok",
     blurb: "Proven by a real test run after the patch was applied.",
   },
 };
@@ -84,8 +83,8 @@ export function ClaimTag({
     <span
       title={claim.blurb}
       className={cn(
-        "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-2xs font-semibold tracking-wide",
-        claim.classes,
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-bold tracking-wide",
+        TONE_SOFT[claim.tone],
         className,
       )}
     >
@@ -107,10 +106,10 @@ export function ClaimSection({
   className?: string;
 }) {
   return (
-    <section className={cn("space-y-2", className)}>
-      <div className="flex items-center gap-2">
+    <section className={cn("space-y-2.5", className)}>
+      <div className="flex flex-wrap items-center gap-2">
         <ClaimTag kind={kind} />
-        {title ? <h3 className="text-sm font-semibold text-ink">{title}</h3> : null}
+        {title ? <h3 className="text-sm font-bold text-ink">{title}</h3> : null}
       </div>
       <div className="text-sm leading-relaxed text-ink">{children}</div>
     </section>
@@ -135,28 +134,46 @@ export function VerdictBanner({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border px-4 py-3",
-        verified
-          ? "border-ok/40 bg-ok/10"
-          : "border-warn/40 bg-warn/10",
+        "relative flex items-start gap-3.5 overflow-hidden rounded-card border px-5 py-4 shadow-card",
+        verified ? "border-ok-line bg-ok-soft" : "border-warn-line bg-warn-soft",
         className,
       )}
     >
-      {verified ? (
-        <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-ok" aria-hidden />
-      ) : (
-        <HelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-warn" aria-hidden />
-      )}
-      <div className="min-w-0 space-y-1">
+      <span
+        aria-hidden
+        className={cn("absolute inset-y-0 left-0 w-1", verified ? "bg-ok" : "bg-warn")}
+      />
+      <span
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+          verified ? "bg-ok/15 text-ok-ink" : "bg-warn/15 text-warn-ink",
+        )}
+      >
+        {verified ? (
+          <BadgeCheck className="h-5 w-5" aria-hidden />
+        ) : (
+          <HelpCircle className="h-5 w-5" aria-hidden />
+        )}
+      </span>
+      <div className="min-w-0 space-y-1 pt-0.5">
         <p
           className={cn(
-            "text-sm font-semibold tracking-wide",
-            verified ? "text-ok" : "text-warn",
+            "text-sm font-bold tracking-wide",
+            verified ? "text-ok-ink" : "text-warn-ink",
           )}
         >
           {headline}
         </p>
-        {detail ? <p className="text-xs leading-relaxed text-muted">{detail}</p> : null}
+        {detail ? (
+          <p
+            className={cn(
+              "text-xs leading-relaxed",
+              verified ? "text-ok-ink/80" : "text-warn-ink/80",
+            )}
+          >
+            {detail}
+          </p>
+        ) : null}
       </div>
     </div>
   );

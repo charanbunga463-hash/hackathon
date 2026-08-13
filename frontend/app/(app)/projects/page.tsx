@@ -12,15 +12,9 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-import {
-  NewProjectButton,
-  NewProjectDialog,
-} from "@/components/projects/new-project-dialog";
-import {
-  ProjectsEmptyState,
-  ProjectTable,
-} from "@/components/projects/project-table";
-import { ErrorNote, PageHeader, Spinner } from "@/components/ui/primitives";
+import { NewProjectButton, NewProjectDialog } from "@/components/projects/new-project-dialog";
+import { ProjectsEmptyState, ProjectTable } from "@/components/projects/project-table";
+import { ErrorNote, LoadingBlock, PageHeader } from "@/components/ui/primitives";
 import { usePolling } from "@/hooks/useEvents";
 import { listProjects } from "@/lib/api";
 
@@ -32,15 +26,14 @@ export default function ProjectsPage() {
   const projects = data ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-up">
       <PageHeader
+        eyebrow="Workspace"
         title="Projects"
         description="Each project gets its own isolated workspace and is private to your account."
         action={
           projects.length > 0 ? (
-            <NewProjectButton
-              onCreated={(project) => router.push(`/projects/${project.id}`)}
-            />
+            <NewProjectButton onCreated={(project) => router.push(`/projects/${project.id}`)} />
           ) : null
         }
       />
@@ -48,10 +41,7 @@ export default function ProjectsPage() {
       {error && !data ? <ErrorNote message={error} /> : null}
 
       {loading && !data ? (
-        <div className="flex items-center justify-center gap-2.5 rounded-lg border border-line bg-surface py-16">
-          <Spinner className="h-5 w-5" />
-          <span className="text-sm text-muted">Loading projects…</span>
-        </div>
+        <LoadingBlock label="Loading projects…" />
       ) : projects.length === 0 && !error ? (
         <>
           <ProjectsEmptyState onCreate={() => setDialogOpen(true)} />

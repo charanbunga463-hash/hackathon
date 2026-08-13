@@ -9,8 +9,19 @@
  * read-only facts about how the instance is deployed sit at the bottom, clearly
  * labelled as configuration the user cannot change — not mixed in with things
  * they can.
+ *
+ * There is no appearance section: the product ships one theme, so a control
+ * that only ever had one sensible value would be a control that lies.
  */
 
+import {
+  Cpu,
+  KeyRound,
+  Monitor,
+  ShieldCheck,
+  Trash2,
+  User as UserIcon,
+} from "lucide-react";
 import * as React from "react";
 
 import { useAuth } from "@/components/auth/auth-context";
@@ -24,7 +35,6 @@ import {
   Input,
   PageHeader,
   Section,
-  Select,
   SettingRow,
   Spinner,
   Toggle,
@@ -39,14 +49,9 @@ import {
   updatePreferences,
   updateProfile,
 } from "@/lib/api";
-import {
-  errorField,
-  errorMessage,
-  validateName,
-  validatePassword,
-} from "@/lib/auth";
+import { errorField, errorMessage, validateName, validatePassword } from "@/lib/auth";
 import { formatRelative } from "@/lib/utils";
-import type { Theme, UserPreferences } from "@/types";
+import type { UserPreferences } from "@/types";
 
 export default function SettingsPage() {
   const { user, loading, refresh, signOut } = useAuth();
@@ -61,8 +66,9 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-up">
       <PageHeader
+        eyebrow="Account"
         title="Settings"
         description="Your account, your security, and how API Doctor behaves when it tests your APIs."
       />
@@ -70,7 +76,6 @@ export default function SettingsPage() {
       <AccountSection onSaved={refresh} />
       <SecuritySection onSignedOut={signOut} />
       <BehaviourSection preferences={user.preferences} onSaved={refresh} />
-      <AppearanceSection preferences={user.preferences} onSaved={refresh} />
       <InstanceSection />
       <DangerSection onDeleted={signOut} />
     </div>
@@ -114,7 +119,11 @@ function AccountSection({ onSaved }: { onSaved: () => Promise<void> }) {
   };
 
   return (
-    <Section title="Account" description="Who you are on this instance.">
+    <Section
+      title="Account"
+      description="Who you are on this instance."
+      icon={<UserIcon className="h-3.5 w-3.5" />}
+    >
       <div className="px-4 py-4 sm:px-5">
         <form onSubmit={save} className="max-w-md space-y-4">
           <Field label="Name" error={error} htmlFor="settings-name">
@@ -143,7 +152,7 @@ function AccountSection({ onSaved }: { onSaved: () => Promise<void> }) {
               {busy ? "Saving…" : "Save changes"}
             </Button>
             {saved && !dirty ? (
-              <span className="text-xs text-ok">Saved.</span>
+              <span className="text-xs font-semibold text-ok-ink">Saved.</span>
             ) : null}
           </div>
         </form>
@@ -218,7 +227,8 @@ function PasswordRow() {
               setOpen(true);
             }}
           >
-            Change Password
+            <KeyRound className="h-4 w-4" />
+            Change password
           </Button>
         ) : null
       }
@@ -321,7 +331,11 @@ function SecuritySection({ onSignedOut }: { onSignedOut: () => Promise<void> }) 
   };
 
   return (
-    <Section title="Security" description="Verification status and where you are signed in.">
+    <Section
+      title="Security"
+      description="Verification status and where you are signed in."
+      icon={<ShieldCheck className="h-3.5 w-3.5" />}
+    >
       <SettingRow
         label="Email verification"
         hint={user?.email}
@@ -345,23 +359,25 @@ function SecuritySection({ onSignedOut }: { onSignedOut: () => Promise<void> }) 
         ) : error ? (
           <ErrorNote message={error} />
         ) : (
-          <ul className="divide-y divide-line rounded-md border border-line">
+          <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line">
             {(data?.sessions ?? []).map((session) => (
               <li
                 key={session.id}
-                className="flex flex-col gap-1 px-3 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-1 bg-sunken px-3.5 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between"
               >
                 <span className="min-w-0">
-                  <span className="block truncate text-ink" title={session.user_agent}>
+                  <span
+                    className="block truncate font-medium text-ink"
+                    title={session.user_agent}
+                  >
                     {describeAgent(session.user_agent)}
                   </span>
-                  <span className="block text-faint">
-                    Last active {formatRelative(new Date(session.last_seen * 1000).toISOString())}
+                  <span className="block text-2xs text-faint">
+                    Last active{" "}
+                    {formatRelative(new Date(session.last_seen * 1000).toISOString())}
                   </span>
                 </span>
-                {session.current ? (
-                  <Badge tone="accent">This device</Badge>
-                ) : null}
+                {session.current ? <Badge tone="brand">This device</Badge> : null}
               </li>
             ))}
           </ul>
@@ -370,10 +386,10 @@ function SecuritySection({ onSignedOut }: { onSignedOut: () => Promise<void> }) 
         {failure ? <ErrorNote className="mt-3" message={failure} /> : null}
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button variant="danger" onClick={() => setConfirming(true)}>
-            Logout all sessions
+          <Button variant="danger" size="sm" onClick={() => setConfirming(true)}>
+            Log out all sessions
           </Button>
-          <Button variant="ghost" onClick={() => void refresh()}>
+          <Button variant="ghost" size="sm" onClick={() => void refresh()}>
             Refresh
           </Button>
         </div>
@@ -383,7 +399,7 @@ function SecuritySection({ onSignedOut }: { onSignedOut: () => Promise<void> }) 
         open={confirming}
         title="Sign out everywhere?"
         description="Every device signed in to this account will be signed out, including this one. You will need to sign in again."
-        confirmLabel="Logout all sessions"
+        confirmLabel="Log out all sessions"
         busy={busy}
         onConfirm={revoke}
         onCancel={() => setConfirming(false)}
@@ -395,20 +411,28 @@ function SecuritySection({ onSignedOut }: { onSignedOut: () => Promise<void> }) 
 /** Turn a raw user-agent into something a person can recognise. */
 function describeAgent(agent: string): string {
   if (!agent) return "Unknown device";
-  const browser =
-    /Edg\//.test(agent) ? "Edge"
-    : /OPR\//.test(agent) ? "Opera"
-    : /Chrome\//.test(agent) ? "Chrome"
-    : /Safari\//.test(agent) ? "Safari"
-    : /Firefox\//.test(agent) ? "Firefox"
-    : null;
-  const platform =
-    /Windows/.test(agent) ? "Windows"
-    : /Macintosh|Mac OS/.test(agent) ? "macOS"
-    : /Android/.test(agent) ? "Android"
-    : /iPhone|iPad/.test(agent) ? "iOS"
-    : /Linux/.test(agent) ? "Linux"
-    : null;
+  const browser = /Edg\//.test(agent)
+    ? "Edge"
+    : /OPR\//.test(agent)
+      ? "Opera"
+      : /Chrome\//.test(agent)
+        ? "Chrome"
+        : /Safari\//.test(agent)
+          ? "Safari"
+          : /Firefox\//.test(agent)
+            ? "Firefox"
+            : null;
+  const platform = /Windows/.test(agent)
+    ? "Windows"
+    : /Macintosh|Mac OS/.test(agent)
+      ? "macOS"
+      : /Android/.test(agent)
+        ? "Android"
+        : /iPhone|iPad/.test(agent)
+          ? "iOS"
+          : /Linux/.test(agent)
+            ? "Linux"
+            : null;
   if (browser && platform) return `${browser} on ${platform}`;
   return browser ?? platform ?? agent.slice(0, 60);
 }
@@ -465,6 +489,7 @@ function BehaviourSection({
     <Section
       title="API Doctor"
       description="How your APIs are tested and analysed. These apply to every run you start."
+      icon={<Monitor className="h-3.5 w-3.5" />}
     >
       {error ? (
         <div className="px-4 pt-3 sm:px-5">
@@ -546,52 +571,6 @@ function BehaviourSection({
   );
 }
 
-/* ------------------------------------------------------------ Appearance -- */
-
-const THEMES: { value: Theme; label: string }[] = [
-  { value: "system", label: "Match system" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-];
-
-function AppearanceSection({
-  preferences,
-  onSaved,
-}: {
-  preferences: UserPreferences;
-  onSaved: () => Promise<void>;
-}) {
-  const { save, saving, error } = usePreferenceSaver(onSaved);
-
-  return (
-    <Section title="Appearance" description="Saved to your account, so it follows you between browsers.">
-      {error ? (
-        <div className="px-4 pt-3 sm:px-5">
-          <ErrorNote message={error} />
-        </div>
-      ) : null}
-      <SettingRow
-        label="Theme"
-        hint="“Match system” follows your operating system's light or dark setting."
-        control={
-          <Select
-            value={preferences.theme}
-            aria-label="Theme"
-            disabled={saving === "theme"}
-            onChange={(event) => void save({ theme: event.target.value as Theme })}
-          >
-            {THEMES.map((theme) => (
-              <option key={theme.value} value={theme.value}>
-                {theme.label}
-              </option>
-            ))}
-          </Select>
-        }
-      />
-    </Section>
-  );
-}
-
 /* -------------------------------------------------------------- Instance -- */
 
 /**
@@ -608,11 +587,14 @@ function InstanceSection() {
     <Section
       title="This instance"
       description="Set by whoever deployed API Doctor. Shown so you know what your runs actually do."
+      icon={<Cpu className="h-3.5 w-3.5" />}
     >
       <SettingRow
         label="AI model"
         hint="The model every analysis is sent to."
-        control={<span className="mono text-xs text-ink">{system.openai_model}</span>}
+        control={
+          <span className="mono text-xs font-medium text-ink">{system.openai_model}</span>
+        }
       />
       <SettingRow
         label="Analysis engine"
@@ -622,7 +604,7 @@ function InstanceSection() {
             : "No API key is configured, so analysis falls back to the deterministic rule engine and is labelled as such wherever it appears."
         }
         control={
-          <Badge tone={system.openai_configured ? "accent" : "warn"}>
+          <Badge tone={system.openai_configured ? "brand" : "warn"}>
             {system.reasoning_engine}
           </Badge>
         }
@@ -668,6 +650,7 @@ function DangerSection({ onDeleted }: { onDeleted: () => Promise<void> }) {
     <Section
       title="Delete account"
       tone="danger"
+      icon={<Trash2 className="h-3.5 w-3.5" />}
       description="Permanent. There is no undo and no recovery."
     >
       <SettingRow
@@ -683,7 +666,7 @@ function DangerSection({ onDeleted }: { onDeleted: () => Promise<void> }) {
               setOpen(true);
             }}
           >
-            Delete Account
+            Delete account
           </Button>
         }
       />

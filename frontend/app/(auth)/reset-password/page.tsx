@@ -156,7 +156,7 @@ function ResetPasswordForm() {
         <div className="mt-5 space-y-2 text-center">
           <ResendButton cooldownSeconds={cooldown} onResend={resend} disabled={busy} />
           <p className="text-2xs text-faint">
-            <Link href="/login" className="text-accent hover:underline">
+            <Link href="/login" className="font-semibold text-brand-ink hover:underline">
               Back to Login
             </Link>
           </p>
@@ -215,7 +215,7 @@ function ResetPasswordForm() {
  */
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="panel h-64 animate-pulse" />}>
+    <Suspense fallback={<div className="skeleton h-80 rounded-[1.25rem]" />}>
       <ResetPasswordForm />
     </Suspense>
   );

@@ -74,7 +74,10 @@ function LoginForm() {
     <AuthCard title="Welcome back" subtitle="Sign in to your API Doctor workspace.">
       <form onSubmit={submit} className="space-y-4" noValidate>
         {notice ? (
-          <p className="rounded-md border border-ok/30 bg-ok/10 px-3 py-2 text-xs text-ok" role="status">
+          <p
+            className="rounded-xl border border-ok-line bg-ok-soft px-3.5 py-2.5 text-xs font-medium text-ok-ink"
+            role="status"
+          >
             {notice}
           </p>
         ) : null}
@@ -99,7 +102,7 @@ function LoginForm() {
           htmlFor="password"
           error={errors.password}
           hint={
-            <Link href="/forgot-password" className="text-2xs text-accent hover:underline">
+            <Link href="/forgot-password" className="text-2xs font-semibold text-brand-ink hover:underline">
               Forgot password?
             </Link>
           }
@@ -120,7 +123,7 @@ function LoginForm() {
 
       <p className="mt-5 text-center text-xs text-muted">
         Don&apos;t have an account?{" "}
-        <Link href="/register" className="text-accent hover:underline">
+        <Link href="/register" className="font-semibold text-brand-ink hover:underline">
           Create account
         </Link>
       </p>
@@ -135,7 +138,7 @@ function LoginForm() {
  */
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="panel h-64 animate-pulse" />}>
+    <Suspense fallback={<div className="skeleton h-80 rounded-[1.25rem]" />}>
       <LoginForm />
     </Suspense>
   );

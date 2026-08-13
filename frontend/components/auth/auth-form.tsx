@@ -5,15 +5,16 @@
  *
  * They exist so the five auth screens behave identically: the same field
  * markup and error placement, the same disabled-while-submitting rule, the
- * same success and failure notes.
+ * same success and failure notes. Inputs are the app's own `Input` primitive,
+ * so a text field looks the same signed out as it does in Settings.
  */
 
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 import * as React from "react";
 
-import { Reveal } from "@/components/marketing/motion";
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/primitives";
 import { passwordStrength } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 export function AuthCard({
   title,
@@ -25,15 +26,15 @@ export function AuthCard({
   children: React.ReactNode;
 }) {
   return (
-    <Reveal>
-      <div className="glass edge-lit relative overflow-hidden rounded-2xl p-6">
-        <div className="mb-5">
-          <h2 className="text-lg font-semibold tracking-tight text-ink">{title}</h2>
-          {subtitle ? <p className="mt-1 text-xs leading-relaxed text-muted">{subtitle}</p> : null}
-        </div>
-        {children}
+    <div className="rounded-[1.25rem] border border-line bg-surface p-6 shadow-pop animate-fade-up sm:p-7">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold tracking-tight text-ink">{title}</h2>
+        {subtitle ? (
+          <p className="mt-1.5 text-xs leading-relaxed text-muted">{subtitle}</p>
+        ) : null}
       </div>
-    </Reveal>
+      {children}
+    </div>
   );
 }
 
@@ -53,14 +54,14 @@ export function Field({
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-2">
-        <label htmlFor={htmlFor} className="text-xs font-medium text-ink">
+        <label htmlFor={htmlFor} className="text-xs font-semibold text-ink">
           {label}
         </label>
         {hint}
       </div>
       {children}
       {error ? (
-        <p id={`${htmlFor}-error`} className="text-2xs text-danger" role="alert">
+        <p id={`${htmlFor}-error`} className="text-2xs font-medium text-danger-ink" role="alert">
           {error}
         </p>
       ) : null}
@@ -71,18 +72,11 @@ export function Field({
 export const AuthInput = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }
->(({ className, invalid, ...props }, ref) => (
-  <input
+>(({ invalid, ...props }, ref) => (
+  <Input
     ref={ref}
-    aria-invalid={invalid || undefined}
+    invalid={invalid}
     aria-describedby={invalid ? `${props.id}-error` : undefined}
-    className={cn(
-      "w-full rounded-md border bg-canvas px-3 py-2 text-sm text-ink placeholder:text-faint",
-      "outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/40",
-      "disabled:cursor-not-allowed disabled:opacity-60",
-      invalid ? "border-danger/60" : "border-line",
-      className,
-    )}
     {...props}
   />
 ));
@@ -105,7 +99,7 @@ export function PasswordInput({
         type="button"
         onClick={() => setVisible((value) => !value)}
         aria-label={visible ? "Hide password" : "Show password"}
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-faint hover:text-muted"
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-faint transition-colors hover:bg-elevated hover:text-muted"
         tabIndex={-1}
       >
         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -114,22 +108,29 @@ export function PasswordInput({
   );
 }
 
+/** Four segments that fill as the password gets stronger. */
 export function StrengthMeter({ value }: { value: string }) {
   const score = passwordStrength(value);
   const labels = ["", "Weak", "Fair", "Good", "Strong"];
-  const tones = ["bg-line", "bg-danger", "bg-warn", "bg-accent", "bg-ok"];
+  const fills = ["bg-line", "bg-danger", "bg-warn", "bg-info", "bg-ok"];
+  const texts = ["", "text-danger-ink", "text-warn-ink", "text-info-ink", "text-ok-ink"];
   if (!value) return null;
   return (
-    <div className="flex items-center gap-2 pt-0.5">
-      <div className="flex h-1 flex-1 gap-1">
+    <div className="flex items-center gap-2 pt-1">
+      <div className="flex h-1.5 flex-1 gap-1">
         {[1, 2, 3, 4].map((step) => (
           <span
             key={step}
-            className={cn("h-full flex-1 rounded-full", step <= score ? tones[score] : "bg-line")}
+            className={cn(
+              "h-full flex-1 rounded-full transition-colors duration-300",
+              step <= score ? fills[score] : "bg-line",
+            )}
           />
         ))}
       </div>
-      <span className="w-11 text-right text-2xs text-faint">{labels[score]}</span>
+      <span className={cn("w-12 text-right text-2xs font-semibold", texts[score])}>
+        {labels[score]}
+      </span>
     </div>
   );
 }
@@ -137,6 +138,7 @@ export function StrengthMeter({ value }: { value: string }) {
 export function SubmitButton({
   loading,
   children,
+  className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }) {
   return (
@@ -146,10 +148,11 @@ export function SubmitButton({
       // burn two OTP sends.
       disabled={loading || props.disabled}
       className={cn(
-        "flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5",
-        "text-sm font-medium text-white shadow-[0_10px_26px_-10px_rgb(var(--accent)/0.8)] transition-all",
-        "hover:-translate-y-px hover:bg-accent/90 hover:shadow-[0_14px_32px_-10px_rgb(var(--accent)/0.95)]",
-        "disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0",
+        "flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gradient px-4 py-3",
+        "text-sm font-semibold text-white shadow-glow transition-all duration-200",
+        "hover:-translate-y-px hover:shadow-glow-lg",
+        "disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-glow",
+        className,
       )}
       {...props}
     >
@@ -164,9 +167,9 @@ export function FormError({ message }: { message: string | null }) {
   return (
     <div
       role="alert"
-      className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger"
+      className="flex items-start gap-2 rounded-xl border border-danger-line bg-danger-soft px-3.5 py-2.5 text-xs font-medium text-danger-ink"
     >
-      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+      <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
       <span>{message}</span>
     </div>
   );
@@ -177,9 +180,9 @@ export function FormSuccess({ message }: { message: string | null }) {
   return (
     <div
       role="status"
-      className="flex items-start gap-2 rounded-md border border-ok/30 bg-ok/10 px-3 py-2 text-xs text-ok"
+      className="flex items-start gap-2 rounded-xl border border-ok-line bg-ok-soft px-3.5 py-2.5 text-xs font-medium text-ok-ink"
     >
-      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+      <CheckCircle2 className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
       <span>{message}</span>
     </div>
   );
@@ -271,7 +274,10 @@ export function OtpInput({
           onPaste={(event) => {
             // Pasting the whole code is how most people enter one.
             event.preventDefault();
-            const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, length);
+            const pasted = event.clipboardData
+              .getData("text")
+              .replace(/\D/g, "")
+              .slice(0, length);
             if (!pasted) return;
             const next = Array.from({ length }, (_, slot) => pasted[slot] ?? "");
             commit(next);
@@ -284,10 +290,10 @@ export function OtpInput({
           aria-label={`Digit ${index + 1}`}
           maxLength={1}
           className={cn(
-            "mono h-12 w-full min-w-0 rounded-md border border-line bg-canvas text-center",
-            "text-lg text-ink outline-none transition-colors",
-            "focus:border-accent focus:ring-1 focus:ring-accent/40",
-            "disabled:cursor-not-allowed disabled:opacity-60",
+            "mono h-[3.25rem] w-full min-w-0 rounded-xl border border-line bg-surface text-center",
+            "text-lg font-semibold text-ink shadow-subtle outline-none transition-all",
+            "focus:border-brand focus:ring-4 focus:ring-brand/12",
+            "disabled:cursor-not-allowed disabled:bg-elevated disabled:opacity-60",
           )}
         />
       ))}
@@ -329,7 +335,7 @@ export function ResendButton({
       type="button"
       onClick={click}
       disabled={busy || disabled || remaining > 0}
-      className="text-xs text-accent hover:underline disabled:cursor-not-allowed disabled:text-faint disabled:no-underline"
+      className="text-xs font-semibold text-brand-ink transition-colors hover:underline disabled:cursor-not-allowed disabled:text-faint disabled:no-underline"
     >
       {remaining > 0 ? `Resend code in ${remaining}s` : busy ? "Sending…" : "Resend code"}
     </button>

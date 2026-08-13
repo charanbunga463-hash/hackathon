@@ -1,29 +1,23 @@
 "use client";
 
 /**
- * Dashboard — Executive AI Doctor Command Center.
+ * Dashboard — the state of every project you own, in one screen.
  *
- * Provides real-time visibility into monitored projects, API route surfaces,
- * system health metrics, active sandbox engine, quick workflow triggers, and
- * live streaming agent activities.
+ * The order is deliberate: how healthy things are, then what needs attention,
+ * then what the agent is doing right now. Nothing here is decorative — each
+ * number is derived from the project list the backend actually returned, and
+ * "healthy" only counts projects the backend called healthy or repaired.
  */
 
 import {
-  Activity,
-  AlertCircle,
   ArrowUpRight,
-  CheckCircle2,
   Cpu,
-  FileCode2,
   FlaskConical,
   FolderKanban,
-  Globe,
   Plus,
   RefreshCw,
   Route,
   ShieldCheck,
-  Sparkles,
-  Stethoscope,
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,21 +26,16 @@ import * as React from "react";
 
 import { ActivityStream } from "@/components/agent-activity/activity-stream";
 import { useAuth } from "@/components/auth/auth-context";
-import {
-  NewProjectButton,
-  NewProjectDialog,
-} from "@/components/projects/new-project-dialog";
-import {
-  ProjectsEmptyState,
-  ProjectTable,
-} from "@/components/projects/project-table";
+import { NewProjectButton, NewProjectDialog } from "@/components/projects/new-project-dialog";
+import { ProjectsEmptyState, ProjectTable } from "@/components/projects/project-table";
 import {
   Badge,
   Button,
+  Card,
   ErrorNote,
-  Panel,
-  PanelHeader,
-  Spinner,
+  IconTile,
+  LoadingBlock,
+  Progress,
   StatTile,
 } from "@/components/ui/primitives";
 import { useEvents, usePolling } from "@/hooks/useEvents";
@@ -64,130 +53,108 @@ export default function DashboardPage() {
   const projects = projectsData ?? [];
   const firstName = user?.name?.trim().split(/\s+/)[0] || "there";
 
-  // Calculate metrics
-  const totalProjects = projects.length;
-  const healthyProjects = projects.filter((p) => p.status === "healthy" || p.status === "repaired").length;
-  const failingProjects = projects.filter((p) => p.status === "failing" || p.status === "error").length;
-  const inProgressProjects = projects.filter((p) => p.status === "repairing" || p.status === "analyzing").length;
-  const totalRoutes = projects.reduce((acc, p) => acc + (p.route_count || 0), 0);
+  const total = projects.length;
+  const healthy = projects.filter((p) => p.status === "healthy" || p.status === "repaired").length;
+  const failing = projects.filter((p) => p.status === "failing" || p.status === "error").length;
+  const routes = projects.reduce((sum, p) => sum + (p.route_count || 0), 0);
 
-  const healthRate = totalProjects > 0 ? Math.round((healthyProjects / totalProjects) * 100) : 100;
+  const healthRate = total > 0 ? Math.round((healthy / total) * 100) : 100;
   const healthTone = healthRate >= 80 ? "ok" : healthRate >= 50 ? "warn" : "danger";
 
   return (
     <div className="space-y-6 animate-fade-up">
-      {/* Hero Header */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-line pb-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-ink">
-              Welcome back, {firstName}
-            </h1>
-            <span className="text-xl">👋</span>
-          </div>
-          <p className="max-w-2xl text-xs sm:text-sm text-muted leading-relaxed">
-            API Doctor autonomous agent is monitoring system endpoints, detecting failure root causes, and proposing verified code fixes.
+      {/* ------------------------------------------------------------ hero */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="eyebrow">Workspace</p>
+          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            Welcome back, {firstName}
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+            API Doctor watches your endpoints, finds the root cause of each failure against real
+            source and test output, and only calls a repair fixed once your own tests prove it.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          <Button variant="secondary" size="sm" onClick={refresh} title="Refresh dashboard data">
-            <RefreshCw className="h-3.5 w-3.5" />
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="secondary" onClick={refresh} title="Refresh dashboard data">
+            <RefreshCw className="h-4 w-4" />
             Refresh
           </Button>
-          <NewProjectButton
-            onCreated={(project) => router.push(`/projects/${project.id}`)}
-          />
+          <NewProjectButton onCreated={(project) => router.push(`/projects/${project.id}`)} />
         </div>
       </header>
 
-      {/* Metrics Grid */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* --------------------------------------------------------- metrics */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
-          label="Total Projects"
-          value={
-            <div className="flex items-baseline justify-between">
-              <span>{totalProjects}</span>
-              <span className="text-xs font-normal text-muted">
-                {healthyProjects} healthy
-              </span>
-            </div>
-          }
+          label="Projects"
+          value={total}
+          tone={failing > 0 ? "danger" : "brand"}
+          icon={<FolderKanban className="h-3.5 w-3.5" />}
           hint={
-            failingProjects > 0 ? (
-              <span className="text-danger font-medium">{failingProjects} project(s) failing</span>
+            failing > 0 ? (
+              <span className="font-semibold text-danger-ink">
+                {failing} project{failing === 1 ? "" : "s"} failing
+              </span>
             ) : (
-              "All projects operational"
+              `${healthy} healthy · all operational`
             )
           }
-          icon={<FolderKanban className="h-4 w-4" />}
-          tone={failingProjects > 0 ? "danger" : "ok"}
         />
 
         <StatTile
-          label="API Surface Routes"
-          value={totalRoutes}
-          hint="Discovered static endpoints"
-          icon={<Route className="h-4 w-4" />}
-          tone="accent"
+          label="API routes"
+          value={routes}
+          tone="info"
+          icon={<Route className="h-3.5 w-3.5" />}
+          hint="Discovered by static analysis"
         />
 
         <StatTile
-          label="System Health Index"
+          label="Health index"
           value={`${healthRate}%`}
-          hint={
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <div className="h-1.5 flex-1 rounded-full bg-elevated overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    healthRate >= 80 ? "bg-ok" : healthRate >= 50 ? "bg-warn" : "bg-danger"
-                  }`}
-                  style={{ width: `${healthRate}%` }}
-                />
-              </div>
-              <span className="text-2xs text-muted tabular-nums">{healthyProjects}/{totalProjects}</span>
-            </div>
-          }
-          icon={<ShieldCheck className="h-4 w-4" />}
           tone={healthTone}
-        />
-
-        <StatTile
-          label="Sandbox Execution"
-          value={
-            <span className="text-sm font-semibold truncate block">
-              {sandbox?.isolated ? "Container Sandbox" : "Local Host Runner"}
+          icon={<ShieldCheck className="h-3.5 w-3.5" />}
+          hint={
+            <span className="flex items-center gap-2">
+              <Progress value={healthRate / 100} tone={healthTone} className="h-1.5 flex-1" />
+              <span className="shrink-0 tabular-nums">
+                {healthy}/{total}
+              </span>
             </span>
           }
-          hint={
-            sandbox?.isolated ? (
-              <span className="text-ok font-medium">Docker isolated mode</span>
-            ) : (
-              <span className="text-warn font-medium">Local trusted mode</span>
-            )
+        />
+
+        <StatTile
+          label="Execution"
+          value={
+            <span className="block truncate text-base">
+              {sandbox?.isolated ? "Container sandbox" : "Local host runner"}
+            </span>
           }
-          icon={<Cpu className="h-4 w-4" />}
           tone={sandbox?.isolated ? "ok" : "warn"}
+          icon={<Cpu className="h-3.5 w-3.5" />}
+          hint={sandbox?.isolated ? "Docker isolated mode" : "No container isolation"}
         />
       </div>
 
-      {/* Main Content Layout */}
+      {/* ----------------------------------------------------------- body */}
       <div className="grid gap-6 xl:grid-cols-12">
-        {/* Left Column - Projects & Quick Workflows (8 cols) */}
-        <div className="xl:col-span-8 space-y-6 min-w-0">
+        <div className="min-w-0 space-y-6 xl:col-span-8">
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-ink">Projects Directory</h2>
+              <h2 className="flex items-center gap-2 text-base font-bold text-ink">
+                Your projects
                 <Badge tone="muted">{projects.length}</Badge>
-              </div>
-
+              </h2>
               {projects.length > 0 ? (
                 <Link
                   href="/projects"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand-ink hover:underline"
                 >
-                  View all projects <ArrowUpRight className="h-3 w-3" />
+                  View all
+                  <ArrowUpRight className="h-3 w-3" aria-hidden />
                 </Link>
               ) : null}
             </div>
@@ -195,10 +162,7 @@ export default function DashboardPage() {
             {error && !projectsData ? (
               <ErrorNote message={error} />
             ) : loading && !projectsData ? (
-              <div className="flex items-center justify-center gap-2.5 rounded-lg border border-line bg-surface py-16">
-                <Spinner className="h-5 w-5" />
-                <span className="text-sm text-muted">Loading monitored projects…</span>
-              </div>
+              <LoadingBlock label="Loading monitored projects…" />
             ) : projects.length === 0 ? (
               <NoProjects onCreated={(id) => router.push(`/projects/${id}`)} />
             ) : (
@@ -206,81 +170,41 @@ export default function DashboardPage() {
             )}
           </section>
 
-          {/* Quick Workflows Panel */}
           <section className="space-y-3">
-            <h2 className="text-base font-semibold text-ink">AI Doctor Workflows</h2>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div
+            <h2 className="text-base font-bold text-ink">What the agent does</h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <WorkflowCard
+                tone="brand"
+                icon={<Plus className="h-4 w-4" />}
+                title="Add a project"
+                body="Upload a FastAPI, Flask, Django or other Python API as a .zip and it is analysed on arrival."
                 onClick={() => setDialogOpen(true)}
-                className="panel lift group cursor-pointer p-4 hover:border-accent/50"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
-                  <Plus className="h-4 w-4" />
-                </div>
-                <h3 className="mt-3 text-xs font-semibold text-ink">Add New API Project</h3>
-                <p className="mt-1 text-2xs text-muted leading-relaxed">
-                  Upload FastAPI, Flask, Express or Python backend project files for diagnostic scanning.
-                </p>
-              </div>
-
-              <div className="panel lift p-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-info/10 text-info">
-                  <FlaskConical className="h-4 w-4" />
-                </div>
-                <h3 className="mt-3 text-xs font-semibold text-ink">Automated Probe & Test</h3>
-                <p className="mt-1 text-2xs text-muted leading-relaxed">
-                  Run test suites or HTTP probes to catch broken endpoints before production.
-                </p>
-              </div>
-
-              <div className="panel lift p-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-ok/10 text-ok">
-                  <Wrench className="h-4 w-4" />
-                </div>
-                <h3 className="mt-3 text-xs font-semibold text-ink">Self-Healing Patch Agent</h3>
-                <p className="mt-1 text-2xs text-muted leading-relaxed">
-                  Generates minimal diff patches, applies code fixes, and verifies tests pass cleanly.
-                </p>
-              </div>
+              />
+              <WorkflowCard
+                tone="info"
+                icon={<FlaskConical className="h-4 w-4" />}
+                title="Probe and test"
+                body="Run the project's own suite, or call every discovered endpoint and record what really came back."
+              />
+              <WorkflowCard
+                tone="ok"
+                icon={<Wrench className="h-4 w-4" />}
+                title="Repair and verify"
+                body="A minimal diff, your approval, then the suite runs again to prove the failure is gone."
+              />
             </div>
           </section>
         </div>
 
-        {/* Right Column - Sandbox Info & Live Activity Feed (4 cols) */}
-        <div className="xl:col-span-4 space-y-6 min-w-0">
-          {/* Sandbox Info Widget */}
-          <Panel className="p-4 space-y-3 border-line bg-surface">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Cpu className="h-4 w-4 text-accent" />
-                <span className="text-xs font-semibold text-ink">Execution Environment</span>
-              </div>
-              <Badge tone={sandbox?.isolated ? "ok" : "warn"}>
-                {sandbox?.isolated ? "Isolated" : "Local Mode"}
-              </Badge>
-            </div>
-            <p className="text-2xs text-muted leading-relaxed">
-              {sandbox?.isolated
-                ? "Code runs inside isolated Docker containers with full resource boundaries."
-                : "Project code runs directly on host runner. CPU, memory, and filesystem are non-restricted."}
-            </p>
-            <div className="pt-1 border-t border-line/60 flex items-center justify-between text-2xs text-faint">
-              <span>Engine: {sandbox?.kind ?? "local_process"}</span>
-              <Link href="/settings" className="text-accent hover:underline">
-                Environment settings
-              </Link>
-            </div>
-          </Panel>
-
-          {/* Real-time Agent Activity Stream */}
-          <Panel className="flex h-[460px] flex-col overflow-hidden">
+        {/* ---------------------------------------------------- live feed */}
+        <div className="min-w-0 xl:col-span-4">
+          <Card className="flex h-[32rem] flex-col overflow-hidden xl:sticky xl:top-20">
             <ActivityStream
               events={events}
               connected={connected}
-              className="flex-1 min-h-0 h-full overflow-hidden"
-              emptyHint="Agent streaming engine connected. Run tests or start repairs to watch agent events."
+              emptyHint="The stream is connected. Run tests or start a repair to watch each agent step arrive."
             />
-          </Panel>
+          </Card>
         </div>
       </div>
 
@@ -296,9 +220,42 @@ export default function DashboardPage() {
   );
 }
 
-/**
- * The empty state carries its own create button.
- */
+function WorkflowCard({
+  tone,
+  icon,
+  title,
+  body,
+  onClick,
+}: {
+  tone: "brand" | "info" | "ok";
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  onClick?: () => void;
+}) {
+  const content = (
+    <>
+      <IconTile tone={tone}>{icon}</IconTile>
+      <h3 className="mt-3.5 text-sm font-bold text-ink">{title}</h3>
+      <p className="mt-1.5 text-xs leading-relaxed text-muted">{body}</p>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="card card-interactive p-4 text-left"
+      >
+        {content}
+      </button>
+    );
+  }
+  return <div className="card p-4">{content}</div>;
+}
+
+/** The empty state carries its own create dialog. */
 function NoProjects({ onCreated }: { onCreated: (projectId: string) => void }) {
   const [open, setOpen] = React.useState(false);
   return (
@@ -315,4 +272,3 @@ function NoProjects({ onCreated }: { onCreated: (projectId: string) => void }) {
     </>
   );
 }
-

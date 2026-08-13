@@ -15,9 +15,17 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-import { Badge, EmptyState } from "@/components/ui/primitives";
-import { cn, formatTime } from "@/lib/utils";
+import { EmptyState, StatusDot } from "@/components/ui/primitives";
+import { cn, formatTime, type Tone } from "@/lib/utils";
 import type { AgentEvent } from "@/types";
+
+/**
+ * The live agent feed.
+ *
+ * Every step the backend takes streams here as it happens. The icon says what
+ * kind of step it was; the tone says whether it went well. Both come from the
+ * event itself — nothing here decides that a run looks healthy.
+ */
 
 const ICONS: Record<string, React.ElementType> = {
   "agent.tool_call": Terminal,
@@ -37,12 +45,20 @@ const ICONS: Record<string, React.ElementType> = {
   error: XCircle,
 };
 
-const LEVEL_CLASS: Record<string, string> = {
-  info: "text-muted",
-  success: "text-ok",
-  warning: "text-warn",
-  error: "text-danger",
-  debug: "text-faint",
+const LEVEL: Record<string, { tone: Tone; text: string; chip: string }> = {
+  info: { tone: "info", text: "text-ink", chip: "border-info-line bg-info-soft text-info-ink" },
+  success: { tone: "ok", text: "text-ok-ink", chip: "border-ok-line bg-ok-soft text-ok-ink" },
+  warning: {
+    tone: "warn",
+    text: "text-warn-ink",
+    chip: "border-warn-line bg-warn-soft text-warn-ink",
+  },
+  error: {
+    tone: "danger",
+    text: "text-danger-ink",
+    chip: "border-danger-line bg-danger-soft text-danger-ink",
+  },
+  debug: { tone: "muted", text: "text-muted", chip: "border-line bg-elevated text-muted" },
 };
 
 export function ActivityStream({
@@ -65,34 +81,39 @@ export function ActivityStream({
 
   const onScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const element = event.currentTarget;
-    const atBottom =
-      element.scrollHeight - element.scrollTop - element.clientHeight < 60;
+    const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 60;
     setPinned(atBottom);
   };
 
   return (
-    <div className={cn("flex flex-col min-h-0 h-full overflow-hidden", className)}>
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-3.5 py-2.5 bg-surface/50">
-        <div className="flex items-center gap-2">
-          <Radio
-            className={cn("h-3.5 w-3.5", connected ? "text-ok animate-pulse" : "text-faint")}
-            aria-hidden
-          />
-          <span className="text-xs font-medium text-ink">Agent activity</span>
-          <Badge tone={connected ? "ok" : "muted"}>
-            {connected ? "live" : "disconnected"}
-          </Badge>
+    <div className={cn("flex h-full min-h-0 flex-col overflow-hidden", className)}>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-elevated/60 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <StatusDot tone={connected ? "ok" : "muted"} pulse={connected} />
+          <span className="truncate text-xs font-bold text-ink">Agent activity</span>
+          <span
+            className={cn(
+              "rounded-full border px-2 py-0.5 text-2xs font-semibold",
+              connected
+                ? "border-ok-line bg-ok-soft text-ok-ink"
+                : "border-line bg-elevated text-muted",
+            )}
+          >
+            {connected ? "live" : "offline"}
+          </span>
         </div>
-        <span className="text-2xs tabular-nums text-faint">{events.length} events</span>
+        <span className="shrink-0 text-2xs font-medium tabular-nums text-faint">
+          {events.length} events
+        </span>
       </div>
 
       <div
         onScroll={onScroll}
-        className="scroll-thin flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-2 space-y-1"
+        className="scroll-thin min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-2"
       >
         {events.length === 0 ? (
           <EmptyState
-            icon={<Radio className="h-6 w-6" />}
+            icon={<Radio className="h-5 w-5" />}
             title="No activity yet"
             description={
               emptyHint ??
@@ -100,29 +121,40 @@ export function ActivityStream({
             }
           />
         ) : (
-          <ol className="space-y-1 min-w-0 w-full">
+          <ol className="w-full min-w-0 space-y-1">
             {events.map((event) => {
               const Icon = ICONS[event.type] ?? CircleDot;
+              const level = LEVEL[event.level] ?? LEVEL.info;
               return (
                 <li
                   key={event.id}
-                  className="animate-fade-up flex items-start gap-2.5 rounded-md p-2 transition-colors hover:bg-elevated/80 border border-transparent hover:border-line/40 min-w-0 w-full overflow-hidden"
+                  className="flex w-full min-w-0 animate-fade-up items-start gap-2.5 rounded-xl border border-transparent p-2.5 transition-colors hover:border-line hover:bg-elevated/70"
                 >
-                  <Icon
-                    className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", LEVEL_CLASS[event.level])}
+                  <span
+                    className={cn(
+                      "mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border",
+                      level.chip,
+                    )}
                     aria-hidden
-                  />
+                  >
+                    <Icon className="h-3 w-3" />
+                  </span>
                   <div className="min-w-0 flex-1 overflow-hidden">
-                    <p className={cn("text-xs leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word]", LEVEL_CLASS[event.level])}>
+                    <p
+                      className={cn(
+                        "break-words text-xs leading-relaxed [overflow-wrap:anywhere]",
+                        level.text,
+                      )}
+                    >
                       {event.message}
                     </p>
-                    <p className="mono mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-faint break-words">
-                      <span>{formatTime(event.at)}</span>
-                      <span>·</span>
-                      <span className="truncate max-w-[140px]">{event.type}</span>
+                    <p className="mono mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-faint">
+                      <span className="tabular-nums">{formatTime(event.at)}</span>
+                      <span aria-hidden>·</span>
+                      <span className="max-w-[9rem] truncate">{event.type}</span>
                       {event.attempt ? (
                         <>
-                          <span>·</span>
+                          <span aria-hidden>·</span>
                           <span>attempt {event.attempt}</span>
                         </>
                       ) : null}
@@ -139,7 +171,7 @@ export function ActivityStream({
       {!pinned ? (
         <button
           onClick={() => setPinned(true)}
-          className="shrink-0 border-t border-line px-3 py-1.5 text-2xs text-accent hover:bg-elevated text-center font-medium transition-colors"
+          className="shrink-0 border-t border-line bg-brand-soft px-3 py-2 text-center text-2xs font-semibold text-brand-ink transition-colors hover:bg-brand-line/50"
         >
           Jump to latest
         </button>

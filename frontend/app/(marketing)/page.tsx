@@ -1,21 +1,21 @@
-import type { Metadata } from "next";
-import Link from "next/link";
 import {
   ArrowRight,
+  CheckCircle2,
   FileSearch,
   FlaskConical,
   Lock,
   RotateCcw,
   ShieldCheck,
   Sparkles,
-  CheckCircle2,
   Upload,
 } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
 
 import { Backdrop } from "@/components/marketing/backdrop";
 import { HeroScene } from "@/components/marketing/hero-scene";
 import { Reveal, Tilt } from "@/components/marketing/motion";
-import { Pipeline3D } from "@/components/marketing/pipeline-3d";
+import { Pipeline } from "@/components/marketing/pipeline";
 
 /**
  * The public homepage.
@@ -25,12 +25,6 @@ import { Pipeline3D } from "@/components/marketing/pipeline-3d";
  * is aspirational. The "What it works on" section exists specifically so a
  * visitor learns the real scope (Python, pytest) before signing up rather than
  * after uploading.
- *
- * The page is presented in depth: a parallax hero object, stages staged along
- * Z, and surfaces that respond to the pointer. The spectacle is load-bearing —
- * the hero object is a real repair session, and the pipeline's depth ordering
- * is the pipeline's actual order — so the first impression and the product
- * description are the same thing.
  *
  * This file stays a server component. Only the pieces that need a pointer or an
  * observer are client components, so the page still paints for a visitor with
@@ -48,7 +42,7 @@ export default function HomePage() {
     <>
       <Backdrop />
       <Hero />
-      <Pipeline />
+      <PipelineSection />
       <HowItWorks />
       <Guarantees />
       <Scope />
@@ -61,22 +55,21 @@ export default function HomePage() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-line/60">
+    <section className="relative overflow-hidden">
       <div className="mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-24 lg:py-28">
-        <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
-          {/* ----------------------------------------------------- copy -- */}
+        <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
           <div className="text-center lg:text-left">
             <Reveal>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface/70 px-3 py-1 text-xs text-muted backdrop-blur">
-                <Sparkles className="h-3.5 w-3.5 text-accent" aria-hidden />
-                Detect. Diagnose. Repair. Verify.
+              <span className="inline-flex items-center gap-2 rounded-full border border-brand-line bg-white/80 px-3.5 py-1.5 text-xs font-semibold text-brand-ink shadow-subtle backdrop-blur">
+                <Sparkles className="h-3.5 w-3.5 text-brand" aria-hidden />
+                Detect · Diagnose · Repair · Verify
               </span>
             </Reveal>
 
             <Reveal delay={80}>
-              <h1 className="mt-6 text-4xl font-semibold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[3.4rem]">
+              <h1 className="mt-6 text-4xl font-bold leading-[1.06] tracking-tight text-ink sm:text-5xl lg:text-[3.5rem]">
                 Find out what is broken in your API —{" "}
-                <span className="text-glow">and prove it is fixed.</span>
+                <span className="text-gradient">and prove it is fixed.</span>
               </h1>
             </Reveal>
 
@@ -93,7 +86,7 @@ function Hero() {
               <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
                 <Link
                   href="/register"
-                  className="group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-medium text-white shadow-[0_10px_36px_-10px_rgb(var(--accent)/0.9)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_-10px_rgb(var(--accent)/1)] sm:w-auto"
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gradient px-6 py-3.5 text-sm font-semibold text-white shadow-glow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_48px_-12px_rgb(var(--brand)/0.7)] sm:w-auto"
                 >
                   Create your account
                   <ArrowRight
@@ -103,7 +96,7 @@ function Hero() {
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex w-full items-center justify-center rounded-lg border border-line bg-surface/70 px-6 py-3 text-sm font-medium text-ink backdrop-blur transition-colors hover:bg-elevated sm:w-auto"
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-line bg-white/80 px-6 py-3.5 text-sm font-semibold text-ink shadow-subtle backdrop-blur transition-colors hover:border-brand-line hover:bg-brand-soft hover:text-brand-ink sm:w-auto"
                 >
                   I already have an account
                 </Link>
@@ -111,13 +104,19 @@ function Hero() {
             </Reveal>
 
             <Reveal delay={320}>
-              <p className="mt-5 text-xs text-faint">
-                Free to start · Your code stays private to your account
+              <p className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-faint lg:justify-start">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-ok" aria-hidden />
+                  Free to start
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Lock className="h-3.5 w-3.5 text-brand" aria-hidden />
+                  Private to your account
+                </span>
               </p>
             </Reveal>
           </div>
 
-          {/* ---------------------------------------------------- scene -- */}
           <Reveal delay={200} className="lg:pl-4">
             <HeroScene />
           </Reveal>
@@ -129,9 +128,9 @@ function Hero() {
 
 /* -------------------------------------------------------------- pipeline -- */
 
-function Pipeline() {
+function PipelineSection() {
   return (
-    <section className="border-b border-line/60">
+    <section className="border-t border-line/70 bg-white/50">
       <div className="mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-24">
         <Reveal>
           <SectionHeading
@@ -140,7 +139,7 @@ function Pipeline() {
             description="Each stage hands the next one real evidence. Nothing is skipped and nothing is assumed."
           />
         </Reveal>
-        <Pipeline3D />
+        <Pipeline />
       </div>
     </section>
   );
@@ -168,7 +167,7 @@ const STEPS = [
 
 function HowItWorks() {
   return (
-    <section className="border-b border-line/60">
+    <section className="border-t border-line/70">
       <div className="mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-24">
         <Reveal>
           <SectionHeading
@@ -177,28 +176,19 @@ function HowItWorks() {
           />
         </Reveal>
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-3">
+        <div className="mt-14 grid gap-5 sm:grid-cols-3">
           {STEPS.map(({ icon: Icon, title, body }, index) => (
             <Reveal key={title} delay={index * 110}>
               <Tilt className="group h-full">
-                <div className="glass edge-lit relative h-full overflow-hidden rounded-xl p-6">
-                  <div
-                    className="flex items-center gap-3"
-                    style={{ transform: "translateZ(24px)" }}
-                  >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-canvas/80 text-xs font-semibold tabular-nums text-accent">
+                <div className="card h-full p-6">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-gradient text-sm font-bold tabular-nums text-white shadow-glow">
                       {index + 1}
                     </span>
-                    <Icon className="h-4 w-4 text-muted" aria-hidden />
+                    <Icon className="h-4.5 w-4.5 text-brand" aria-hidden />
                   </div>
-                  <div style={{ transform: "translateZ(14px)" }}>
-                    <h3 className="mt-4 text-base font-semibold text-ink">
-                      {title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted">
-                      {body}
-                    </p>
-                  </div>
+                  <h3 className="mt-5 text-lg font-bold tracking-tight text-ink">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{body}</p>
                 </div>
               </Tilt>
             </Reveal>
@@ -214,29 +204,40 @@ function HowItWorks() {
 const GUARANTEES = [
   {
     icon: ShieldCheck,
+    tone: "ok",
     title: "“Fixed” means tested",
     body: "A repair is only ever reported as verified when your test suite is run after the patch and actually passes. That verdict comes from the exit code, not from the AI — the model explains the result, it cannot change it.",
   },
   {
     icon: RotateCcw,
+    tone: "brand",
     title: "Nothing is applied behind your back",
     body: "Every patch waits for your approval and is limited to a small, reviewable change. If verification fails, your workspace is rolled back to exactly how it was.",
   },
   {
     icon: Lock,
+    tone: "grape",
     title: "Your code is yours",
     body: "Every project is scoped to your account — no one else can list it, open it, or run it. Your code runs in an isolated sandbox with credentials stripped from its environment.",
   },
   {
     icon: FileSearch,
+    tone: "info",
     title: "Facts before opinions",
     body: "Status codes, timings, headers and test results are measured by the backend. The AI only interprets what was collected; it never invents a result.",
   },
-];
+] as const;
+
+const GUARANTEE_TONE = {
+  ok: "border-ok-line bg-ok-soft text-ok-ink",
+  brand: "border-brand-line bg-brand-soft text-brand-ink",
+  grape: "border-grape-line bg-grape-soft text-grape-ink",
+  info: "border-info-line bg-info-soft text-info-ink",
+};
 
 function Guarantees() {
   return (
-    <section className="border-b border-line/60">
+    <section className="border-t border-line/70 bg-white/50">
       <div className="mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-24">
         <Reveal>
           <SectionHeading
@@ -246,24 +247,20 @@ function Guarantees() {
           />
         </Reveal>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-2">
-          {GUARANTEES.map(({ icon: Icon, title, body }, index) => (
+        <div className="mt-14 grid gap-5 md:grid-cols-2">
+          {GUARANTEES.map(({ icon: Icon, title, body, tone }, index) => (
             <Reveal key={title} delay={index * 90}>
-              <Tilt className="group h-full" strength={6}>
-                <div className="glass edge-lit relative h-full rounded-xl p-6">
-                  <div style={{ transform: "translateZ(20px)" }}>
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent transition-shadow duration-500 group-hover:shadow-[0_0_24px_-4px_rgb(var(--accent)/0.7)]">
-                        <Icon className="h-4 w-4" aria-hidden />
-                      </span>
-                      <h3 className="text-base font-semibold text-ink">
-                        {title}
-                      </h3>
-                    </div>
-                    <p className="mt-3 text-sm leading-relaxed text-muted">
-                      {body}
-                    </p>
+              <Tilt className="group h-full" strength={4}>
+                <div className="card h-full p-6">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${GUARANTEE_TONE[tone]}`}
+                    >
+                      <Icon className="h-4.5 w-4.5" aria-hidden />
+                    </span>
+                    <h3 className="text-base font-bold tracking-tight text-ink">{title}</h3>
                   </div>
+                  <p className="mt-3.5 text-sm leading-relaxed text-muted">{body}</p>
                 </div>
               </Tilt>
             </Reveal>
@@ -291,7 +288,7 @@ const FRAMEWORKS = [
 
 function Scope() {
   return (
-    <section className="border-b border-line/60">
+    <section className="border-t border-line/70">
       <div className="mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-24">
         <div className="grid gap-10 md:grid-cols-2 md:gap-14">
           <Reveal>
@@ -304,44 +301,36 @@ function Scope() {
           </Reveal>
 
           <Reveal delay={120}>
-            <div className="glass rounded-xl p-6">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xs font-medium uppercase tracking-wide text-faint">
-                    Frameworks detected
-                  </h3>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {FRAMEWORKS.map((name) => (
-                      <span
-                        key={name}
-                        className="rounded-md border border-line bg-canvas/70 px-2.5 py-1 text-xs text-muted transition-colors duration-300 hover:border-accent/50 hover:text-ink"
-                      >
-                        {name}
-                      </span>
-                    ))}
-                  </div>
+            <div className="card space-y-6 p-6">
+              <div>
+                <h3 className="eyebrow">Frameworks detected</h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {FRAMEWORKS.map((name) => (
+                    <span
+                      key={name}
+                      className="rounded-full border border-line bg-elevated px-3 py-1 text-xs font-medium text-muted transition-colors duration-200 hover:border-brand-line hover:bg-brand-soft hover:text-brand-ink"
+                    >
+                      {name}
+                    </span>
+                  ))}
                 </div>
+              </div>
 
-                <div>
-                  <h3 className="text-xs font-medium uppercase tracking-wide text-faint">
-                    Tests
-                  </h3>
-                  <p className="mt-2 text-sm text-muted">
-                    Runs with <span className="mono text-ink">pytest</span>,
-                    which also picks up plain{" "}
-                    <span className="mono text-ink">unittest</span> files.
-                  </p>
-                </div>
+              <div className="border-t border-line pt-5">
+                <h3 className="eyebrow">Tests</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">
+                  Runs with <span className="mono font-semibold text-ink">pytest</span>, which
+                  also picks up plain <span className="mono font-semibold text-ink">unittest</span>{" "}
+                  files.
+                </p>
+              </div>
 
-                <div>
-                  <h3 className="text-xs font-medium uppercase tracking-wide text-faint">
-                    Endpoint testing
-                  </h3>
-                  <p className="mt-2 text-sm text-muted">
-                    Works best when your app exposes an OpenAPI schema — API
-                    Doctor reads the real contract instead of guessing at routes.
-                  </p>
-                </div>
+              <div className="border-t border-line pt-5">
+                <h3 className="eyebrow">Endpoint testing</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">
+                  Works best when your app exposes an OpenAPI schema — API Doctor reads the real
+                  contract instead of guessing at routes.
+                </p>
               </div>
             </div>
           </Reveal>
@@ -355,26 +344,26 @@ function Scope() {
 
 function CallToAction() {
   return (
-    <section>
+    <section className="border-t border-line/70">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-6 sm:py-24">
         <Reveal>
-          <div className="glass edge-lit relative overflow-hidden rounded-2xl px-6 py-14 text-center sm:px-10 sm:py-16">
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-brand-line bg-brand-soft px-6 py-14 text-center shadow-raised sm:px-10 sm:py-16">
             {/* A single pool of light behind the ask. */}
             <div
               aria-hidden
-              className="pointer-events-none absolute left-1/2 top-0 h-56 w-[36rem] max-w-full -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgb(var(--accent)/0.28),transparent_70%)] blur-2xl"
+              className="pointer-events-none absolute left-1/2 top-0 h-64 w-[40rem] max-w-full -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgb(var(--brand)/0.3),transparent_70%)] blur-2xl"
             />
             <div className="relative">
-              <h2 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+              <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
                 Stop guessing why your API is failing
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-muted">
-                Upload a project and get a real answer — the failing line, the
-                reason, and a fix proven by your own tests.
+                Upload a project and get a real answer — the failing line, the reason, and a fix
+                proven by your own tests.
               </p>
               <Link
                 href="/register"
-                className="group mt-8 inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-medium text-white shadow-[0_10px_36px_-10px_rgb(var(--accent)/0.9)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_-10px_rgb(var(--accent)/1)]"
+                className="group mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gradient px-7 py-3.5 text-sm font-semibold text-white shadow-glow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_48px_-12px_rgb(var(--brand)/0.7)]"
               >
                 Get started
                 <ArrowRight
@@ -406,18 +395,12 @@ function SectionHeading({
   const centered = align === "center";
   return (
     <div className={centered ? "mx-auto max-w-2xl text-center" : ""}>
-      <span className="text-xs font-medium uppercase tracking-wide text-accent">
-        {eyebrow}
-      </span>
-      <h2 className="mt-2.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+      <span className="eyebrow">{eyebrow}</span>
+      <h2 className="mt-3 text-3xl font-bold tracking-tight text-ink sm:text-[2.1rem]">
         {title}
       </h2>
       {description ? (
-        <p
-          className={`mt-4 text-sm leading-relaxed text-muted ${
-            centered ? "mx-auto" : ""
-          }`}
-        >
+        <p className={`mt-4 text-sm leading-relaxed text-muted ${centered ? "mx-auto" : ""}`}>
           {description}
         </p>
       ) : null}
