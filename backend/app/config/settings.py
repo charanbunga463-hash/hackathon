@@ -412,7 +412,13 @@ class Settings(BaseSettings):
 
     @property
     def email_transport(self) -> str:
-        return "smtp" if self.smtp_host else "console"
+        if not self.smtp_host:
+            return "console"
+        # SendGrid hosts go over the HTTPS Web API, since PaaS firewalls (Render,
+        # Fly, Heroku) block outbound SMTP ports and the SMTP connect just hangs.
+        if self.smtp_host.strip().lower().endswith("sendgrid.net"):
+            return "sendgrid-api"
+        return "smtp"
 
     @property
     def ai_enabled(self) -> bool:

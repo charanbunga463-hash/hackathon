@@ -5,9 +5,15 @@ which every provider (SES, SendGrid, Postmark, Mailgun, Gmail) speaks — rather
 than a hard dependency on one vendor's SDK. Configuration is entirely
 environment-driven; nothing here is hardcoded.
 
-Two transports:
+Three transports:
 
-  * `SmtpEmailSender`    — the real one. Used whenever SMTP_HOST is set.
+  * `SendGridApiEmailSender` — SendGrid's HTTPS Web API. Chosen automatically
+                           when SMTP_HOST points at SendGrid, because cloud
+                           platforms (Render, Fly, Heroku, …) block outbound
+                           SMTP ports, so smtp.sendgrid.net:587 just times out.
+                           The Web API rides over HTTPS/443, which is never
+                           blocked, and reuses the same API key.
+  * `SmtpEmailSender`    — plain SMTP. Used for any other SMTP_HOST.
   * `ConsoleEmailSender` — writes the message to the log instead of sending.
                            Development only: `validate_for_environment()`
                            refuses to start a production instance that has
@@ -26,11 +32,18 @@ import ssl
 from email.message import EmailMessage
 from typing import Protocol
 
+import httpx
+
 from ..config.settings import Settings
 from ..runtime.concurrency import io_bound
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def is_sendgrid_host(host: str) -> bool:
+    """SendGrid's SMTP endpoint — the case where the HTTPS API is preferable."""
+    return host.strip().lower().endswith("sendgrid.net")
 
 
 class EmailError(RuntimeError):
@@ -102,12 +115,72 @@ class SmtpEmailSender:
             server.login(self.settings.smtp_username, self.settings.smtp_password or "")
 
 
+class SendGridApiEmailSender:
+    """Send through SendGrid's HTTPS Web API instead of SMTP.
+
+    Render (and most other PaaS) block outbound SMTP ports, so a connection to
+    smtp.sendgrid.net hangs until it times out — once per resolved IP, which is
+    why a 5s SMTP timeout turned into a ~31s request. This path uses HTTPS/443,
+    which is not blocked, and authenticates with the same SendGrid API key that
+    is already configured as SMTP_PASSWORD.
+    """
+
+    name = "sendgrid-api"
+    ENDPOINT = "https://api.sendgrid.com/v3/mail/send"
+
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+
+    def send(self, *, to: str, subject: str, text: str, html: str | None = None) -> None:
+        settings = self.settings
+        api_key = (settings.smtp_password or "").strip()
+        if not api_key:
+            raise EmailError("SendGrid API key missing (set SMTP_PASSWORD to the SG.* key)")
+
+        from_email = settings.smtp_from_email or settings.smtp_username or "no-reply@localhost"
+        # SendGrid requires content in ascending preference order: plain first.
+        content = [{"type": "text/plain", "value": text}]
+        if html:
+            content.append({"type": "text/html", "value": html})
+        payload = {
+            "personalizations": [{"to": [{"email": to}]}],
+            "from": {"email": from_email},
+            "subject": subject,
+            "content": content,
+        }
+
+        try:
+            response = httpx.post(
+                self.ENDPOINT,
+                json=payload,
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=settings.smtp_timeout_seconds,
+            )
+        except Exception as exc:
+            # A single HTTPS request, so no per-IP timeout multiplication.
+            raise EmailError(f"{type(exc).__name__}: {exc}") from exc
+
+        if response.status_code >= 300:
+            # The body can echo the recipient and sender; keep it in the log
+            # only — callers must not forward it to a client.
+            raise EmailError(
+                f"sendgrid api returned {response.status_code}: {response.text[:200]}"
+            )
+
+
+def build_sender(settings: Settings) -> EmailSender:
+    """Pick the transport: SendGrid API for SendGrid hosts, else SMTP, else console."""
+    if not settings.smtp_host:
+        return ConsoleEmailSender()
+    if is_sendgrid_host(settings.smtp_host):
+        return SendGridApiEmailSender(settings)
+    return SmtpEmailSender(settings)
+
+
 class EmailService:
     def __init__(self, settings: Settings, sender: EmailSender | None = None) -> None:
         self.settings = settings
-        self.sender: EmailSender = sender or (
-            SmtpEmailSender(settings) if settings.smtp_host else ConsoleEmailSender()
-        )
+        self.sender: EmailSender = sender or build_sender(settings)
 
     @property
     def transport(self) -> str:
