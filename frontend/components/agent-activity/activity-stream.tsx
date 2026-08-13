@@ -27,7 +27,7 @@ import type { AgentEvent } from "@/types";
  * event itself — nothing here decides that a run looks healthy.
  */
 
-const ICONS: Record<string, React.ElementType> = {
+const ICONS: Record<string, React.ComponentType<any>> = {
   "agent.tool_call": Terminal,
   "agent.tool_result": Search,
   "agent.message": CircleDot,
