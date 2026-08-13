@@ -17,7 +17,7 @@ const THEMES: { value: Theme; label: string; icon: React.ComponentType<{ classNa
 export function ThemeToggle() {
   const { user, refresh } = useAuth();
   const [currentTheme, setCurrentTheme] = React.useState<Theme>(
-    user?.preferences?.theme ?? "dark",
+    user?.preferences?.theme ?? "light",
   );
   const [saving, setSaving] = React.useState(false);
 

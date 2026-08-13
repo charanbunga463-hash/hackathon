@@ -27,6 +27,7 @@ import * as React from "react";
 
 import { useAuth } from "@/components/auth/auth-context";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { Backdrop } from "@/components/marketing/backdrop";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -50,8 +51,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur">
+    <div className="relative min-h-screen">
+      <Backdrop floor={false} />
+      <header className="sticky top-0 z-40 border-b border-line bg-surface/80 shadow-[0_1px_0_0_rgb(255_255_255/0.6)_inset,0_10px_30px_-24px_rgb(17_24_39/0.5)] backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/15 text-accent">

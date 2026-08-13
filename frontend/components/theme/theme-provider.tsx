@@ -32,9 +32,9 @@ export function applyTheme(theme: Theme): void {
 }
 
 export function readStoredTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
+  if (typeof window === "undefined") return "light";
   const stored = window.localStorage?.getItem(STORAGE_KEY);
-  return stored === "light" || stored === "dark" || stored === "system" ? stored : "dark";
+  return stored === "light" || stored === "dark" || stored === "system" ? stored : "light";
 }
 
 export function storeTheme(theme: Theme): void {
@@ -70,7 +70,7 @@ export function useTheme(theme: Theme | undefined): void {
 export const THEME_BOOTSTRAP = `
 (function () {
   try {
-    var t = localStorage.getItem(${JSON.stringify(STORAGE_KEY)}) || "dark";
+    var t = localStorage.getItem(${JSON.stringify(STORAGE_KEY)}) || "light";
     var dark = t === "dark" || (t === "system" &&
       window.matchMedia("(prefers-color-scheme: dark)").matches);
     document.documentElement.classList.toggle("dark", dark);

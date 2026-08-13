@@ -9,11 +9,12 @@ import { cn } from "@/lib/utils";
 /* --------------------------------------------------------------- Button -- */
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-accent text-white hover:bg-accent/90",
+        primary:
+          "bg-accent text-white shadow-[0_8px_20px_-8px_rgb(var(--accent)/0.7)] hover:bg-accent/90 hover:-translate-y-px hover:shadow-[0_12px_26px_-8px_rgb(var(--accent)/0.85)]",
         secondary: "border border-line bg-elevated text-ink hover:bg-line/40",
         ghost: "text-muted hover:bg-elevated hover:text-ink",
         danger: "bg-danger text-white hover:bg-danger/90",
@@ -210,7 +211,7 @@ export function StatTile({
   }[tone];
 
   return (
-    <div className="panel p-4">
+    <div className="panel lift p-4">
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
         {icon ? <span className="text-faint">{icon}</span> : null}

@@ -11,6 +11,7 @@
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 import * as React from "react";
 
+import { Reveal } from "@/components/marketing/motion";
 import { cn } from "@/lib/utils";
 import { passwordStrength } from "@/lib/auth";
 
@@ -24,13 +25,15 @@ export function AuthCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="panel p-6">
-      <div className="mb-5">
-        <h2 className="text-lg font-semibold tracking-tight text-ink">{title}</h2>
-        {subtitle ? <p className="mt-1 text-xs leading-relaxed text-muted">{subtitle}</p> : null}
+    <Reveal>
+      <div className="glass edge-lit relative overflow-hidden rounded-2xl p-6">
+        <div className="mb-5">
+          <h2 className="text-lg font-semibold tracking-tight text-ink">{title}</h2>
+          {subtitle ? <p className="mt-1 text-xs leading-relaxed text-muted">{subtitle}</p> : null}
+        </div>
+        {children}
       </div>
-      {children}
-    </div>
+    </Reveal>
   );
 }
 
@@ -143,9 +146,10 @@ export function SubmitButton({
       // burn two OTP sends.
       disabled={loading || props.disabled}
       className={cn(
-        "flex w-full items-center justify-center gap-2 rounded-md bg-accent px-3 py-2.5",
-        "text-sm font-medium text-white transition-colors hover:bg-accent/90",
-        "disabled:cursor-not-allowed disabled:opacity-60",
+        "flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5",
+        "text-sm font-medium text-white shadow-[0_10px_26px_-10px_rgb(var(--accent)/0.8)] transition-all",
+        "hover:-translate-y-px hover:bg-accent/90 hover:shadow-[0_14px_32px_-10px_rgb(var(--accent)/0.95)]",
+        "disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0",
       )}
       {...props}
     >

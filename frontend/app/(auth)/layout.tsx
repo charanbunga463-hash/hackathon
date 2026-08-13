@@ -11,6 +11,7 @@ import { Stethoscope } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
+import { Backdrop } from "@/components/marketing/backdrop";
 import { ApiError } from "@/lib/api";
 import { getMe } from "@/lib/auth";
 
@@ -36,10 +37,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   }, [router]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+    <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-10">
+      <Backdrop />
       <div className="w-full max-w-sm">
         <div className="mb-7 flex flex-col items-center gap-2.5 text-center">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent">
+          <span className="flex h-11 w-11 animate-float items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-info text-white shadow-[0_12px_30px_-8px_rgb(var(--accent)/0.7)]">
             <Stethoscope className="h-5 w-5" aria-hidden />
           </span>
           <div>

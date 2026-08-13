@@ -13,12 +13,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/*
           Runs before first paint so the page is already in the user's chosen
-          theme. Without it the document paints dark (the class above) and then
-          flips to light a frame later, which reads as a bug.
+          theme. The app is bright by default; this only adds the `.dark` class
+          for the rare account that has explicitly opted into the dark theme,
+          before React hydrates, so there is no flash.
         */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
       </head>

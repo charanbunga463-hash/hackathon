@@ -212,7 +212,7 @@ export default function DashboardPage() {
             <div className="grid gap-3 sm:grid-cols-3">
               <div
                 onClick={() => setDialogOpen(true)}
-                className="group cursor-pointer rounded-lg border border-line bg-surface p-4 transition-all hover:border-accent/50 hover:bg-elevated/40"
+                className="panel lift group cursor-pointer p-4 hover:border-accent/50"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
                   <Plus className="h-4 w-4" />
@@ -223,7 +223,7 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <div className="rounded-lg border border-line bg-surface p-4">
+              <div className="panel lift p-4">
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-info/10 text-info">
                   <FlaskConical className="h-4 w-4" />
                 </div>
@@ -233,7 +233,7 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <div className="rounded-lg border border-line bg-surface p-4">
+              <div className="panel lift p-4">
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-ok/10 text-ok">
                   <Wrench className="h-4 w-4" />
                 </div>
