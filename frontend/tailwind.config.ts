@@ -89,6 +89,7 @@ const config: Config = {
 
       fontFamily: {
         sans: ["var(--font-sans)"],
+        display: ["var(--font-display)"],
         mono: ["var(--font-mono)"],
       },
 
@@ -173,6 +174,10 @@ const config: Config = {
         "dash-flow": {
           to: { strokeDashoffset: "-240" },
         },
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
 
       animation: {
@@ -186,6 +191,7 @@ const config: Config = {
         shimmer: "shimmer 1.8s ease-in-out infinite",
         "sweep-down": "sweep-down 4.5s linear infinite",
         "dash-flow": "dash-flow 3.4s linear infinite",
+        marquee: "marquee 32s linear infinite",
       },
     },
   },

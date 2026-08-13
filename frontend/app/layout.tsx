@@ -1,8 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Poppins } from "next/font/google";
 
 import { ChunkRecovery } from "@/components/system/chunk-recovery";
 
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans-next",
+  display: "swap",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-display-next",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "API Doctor — Detect. Diagnose. Repair. Verify.",
@@ -23,7 +37,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="light" style={{ colorScheme: "light" }}>
+    <html
+      lang="en"
+      className={`light ${inter.variable} ${poppins.variable}`}
+      style={{ colorScheme: "light" }}
+    >
       {/* The chrome lives in the route-group layouts: `(app)` renders the
           authenticated workspace, `(auth)` the signed-out card, `(marketing)`
           the public site. */}
