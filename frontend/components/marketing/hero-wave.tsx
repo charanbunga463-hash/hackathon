@@ -22,6 +22,7 @@ const vertexShader = /* glsl */ `
   uniform float uSize;
   attribute vec2 aGrid;      // normalized grid coord in [-1, 1]
   varying float vHeight;     // normalized peak height for colouring
+  varying float vSpectrum;   // horizontal position for the rainbow sweep
   varying float vFade;       // edge fade so the field dissolves at the rim
 
   void main() {
@@ -44,6 +45,8 @@ const vertexShader = /* glsl */ `
     float y = peak + ripple * rim;
 
     vHeight = clamp(peak / 3.05, 0.0, 1.0);
+    // Horizontal sweep 0..1 across the width, so the crown fans into a rainbow.
+    vSpectrum = clamp(g.x * 0.5 + 0.5, 0.0, 1.0);
     vFade = rim;
 
     vec3 pos = vec3(x, y, z);
@@ -59,6 +62,7 @@ const vertexShader = /* glsl */ `
 const fragmentShader = /* glsl */ `
   precision highp float;
   varying float vHeight;
+  varying float vSpectrum;
   varying float vFade;
 
   // Deep blue -> cyan -> green -> gold -> red, keyed on height.
@@ -82,7 +86,10 @@ const fragmentShader = /* glsl */ `
     if (d > 0.5) discard;
     float glow = smoothstep(0.5, 0.0, d);
 
-    vec3 col = palette(vHeight);
+    // Colour keys mostly on the horizontal sweep for a true rainbow crown,
+    // with height nudging the mix so the peak still runs warmer.
+    float t = clamp(vSpectrum * 0.72 + vHeight * 0.28, 0.0, 1.0);
+    vec3 col = palette(t);
     // Lift brightness at the crown so the peak blooms.
     col += vHeight * 0.35;
 
